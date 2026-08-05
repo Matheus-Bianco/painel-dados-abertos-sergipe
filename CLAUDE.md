@@ -23,7 +23,10 @@ Painel estático (HTML/CSS/JS) com GitHub Pages. MVP: aba **IDEB** completa (mul
 
 ## Repo e URL
 
-- GitHub: `gasefgv/painel-dados-abertos-sergipe`
+- GitHub (atual): `Matheus-Bianco/painel-dados-abertos-sergipe`  
+  https://github.com/Matheus-Bianco/painel-dados-abertos-sergipe  
+  Pages: https://matheus-bianco.github.io/painel-dados-abertos-sergipe/
+- Alvo org: `gasefgv/painel-dados-abertos-sergipe` (transferir quando houver permissão de criar repo na org)
 - Pages: artifact = pasta `painel/` (workflow em push na `main`)
 
 ## Como atualizar o IDEB
