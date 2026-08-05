@@ -465,7 +465,7 @@ function sectionBanner(icon, title, subtitle, opts = {}) {
   // Store flag for external use
   sectionBanner._lastShowToggle = opts.redeToggle !== false;
 
-  const LOGO_FGV_SE = 'img/logo_fgv_se.png?v=7';
+  const LOGO_FGV_SE = 'img/logo_fgv_se.png?v=8';
   const headerIcon = SE_MODE ? LOGO_FGV_SE : icon;
   const hamburger = (SE_MODE || document.body.classList.contains('no-sidebar'))
     ? ''

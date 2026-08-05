@@ -29,8 +29,21 @@ UF_NOME_TO_SG = {
     "Rio de Janeiro": "RJ", "Rio Grande do Norte": "RN", "Rio Grande do Sul": "RS",
     "Rondônia": "RO", "Roraima": "RR", "Santa Catarina": "SC", "São Paulo": "SP",
     "Sergipe": "SE", "Tocantins": "TO",
+    # Abreviações usadas na planilha oficial INEP (UF e Regiões)
+    "R. G. do Norte": "RN",
+    "R. G. do Sul": "RS",
+    "M. G. do Sul": "MS",
 }
-UF_SG_TO_NOME = {v: k for k, v in UF_NOME_TO_SG.items()}
+# Nome canônico para exibição (ignora aliases abreviados)
+UF_SG_TO_NOME = {
+    "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas", "BA": "Bahia",
+    "CE": "Ceará", "DF": "Distrito Federal", "ES": "Espírito Santo", "GO": "Goiás",
+    "MA": "Maranhão", "MT": "Mato Grosso", "MS": "Mato Grosso do Sul", "MG": "Minas Gerais",
+    "PA": "Pará", "PB": "Paraíba", "PR": "Paraná", "PE": "Pernambuco", "PI": "Piauí",
+    "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte", "RS": "Rio Grande do Sul",
+    "RO": "Rondônia", "RR": "Roraima", "SC": "Santa Catarina", "SP": "São Paulo",
+    "SE": "Sergipe", "TO": "Tocantins",
+}
 
 EM_CFG = {
     "file_esc": "divulgacao_ensino_medio_escolas_2025.xlsx",
@@ -435,7 +448,7 @@ def main():
         "por_municipio": por_mun,
         "por_uf_estadual": por_uf,
         "lookup_municipios": lookup,
-        "lookup_ufs": {sg: nome for nome, sg in UF_NOME_TO_SG.items()},
+        "lookup_ufs": dict(UF_SG_TO_NOME),
         "referencias": REFS,
         "ufs_ne": NE_UFS,
     }
