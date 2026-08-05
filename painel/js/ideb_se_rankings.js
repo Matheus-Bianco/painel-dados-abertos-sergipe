@@ -8,6 +8,8 @@
 
   const ET_LABEL = { AI: 'Anos Iniciais', AF: 'Anos Finais', EM: 'Ens. Médio' };
   const ET_COLOR = { AI: '#1d71b9', AF: '#F57C00', EM: '#EE302F' };
+  const EM_ONLY = () => !!(global.SE_EM_ONLY);
+  const ETAPAS_ATIVAS = () => (EM_ONLY() ? ['EM'] : ['AI', 'AF', 'EM']);
 
   function fmtNum(v) {
     return v == null || v === '' ? '—' : Number(v).toFixed(1).replace('.', ',');
@@ -63,7 +65,7 @@
     const rk = ideb?.rankings?.municipios;
     if (!rk) return '';
     const ano = String(rk.ano || anoSel || '2023');
-    const etapas = ['AI', 'AF', 'EM'].filter(et => (rk.etapas?.[et]?.todos || []).length);
+    const etapas = ETAPAS_ATIVAS().filter(et => (rk.etapas?.[et]?.todos || []).length);
 
     const kpiCards = etapas.map(et => {
       const info = rk.etapas[et];
@@ -202,7 +204,7 @@
     const mode = (global.S && global.S.idebUfScope) || 'nordeste';
 
     const scopeData = mode === 'nordeste' ? rk.nordeste : rk;
-    const etapas = ['AI', 'AF', 'EM'].filter(et => (scopeData.etapas?.[et]?.todos || []).length);
+    const etapas = ETAPAS_ATIVAS().filter(et => (scopeData.etapas?.[et]?.todos || []).length);
 
     const kpis = etapas.map(et => {
       const info = scopeData.etapas[et];
@@ -281,9 +283,10 @@
     const mode = (global.S && global.S.idebUfScope) || 'nordeste';
     const block = serie[mode] || serie.brasil;
     const anosSet = new Set();
-    ['AI', 'AF', 'EM'].forEach(et => (block[et] || []).forEach(p => anosSet.add(p.ano)));
+    const ets = ETAPAS_ATIVAS();
+    ets.forEach(et => (block[et] || []).forEach(p => anosSet.add(p.ano)));
     const anos = [...anosSet].sort();
-    const datasets = ['AI', 'AF', 'EM'].map(et => {
+    const datasets = ets.map(et => {
       const map = Object.fromEntries((block[et] || []).map(p => [p.ano, p.posicao]));
       return {
         label: ET_LABEL[et],
@@ -298,7 +301,7 @@
     }).filter(ds => ds.data.some(v => v != null));
 
     const maxN = Math.max(
-      ...['AI', 'AF', 'EM'].flatMap(et => (block[et] || []).map(p => p.n || 0)),
+      ...ets.flatMap(et => (block[et] || []).map(p => p.n || 0)),
       9
     );
 
@@ -344,54 +347,49 @@
       if (allowed.size) lista = lista.filter(e => allowed.has(e.cod_mun));
     }
 
-    // rank by AI then AF then EM
     const ranked = lista.map(e => ({ ...e })).sort((a, b) => {
-      const va = a.AI ?? a.AF ?? a.EM ?? -1;
-      const vb = b.AI ?? b.AF ?? b.EM ?? -1;
+      const va = a.EM ?? a.AI ?? a.AF ?? -1;
+      const vb = b.EM ?? b.AI ?? b.AF ?? -1;
       return (vb - va) || a.nome.localeCompare(b.nome, 'pt-BR');
     });
     ranked.forEach((r, i) => { r.pos = i + 1; });
 
     const body = ranked.map(r => `
       <tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-mun="${norm(r.nome_mun)}"
-        data-ai="${r.AI ?? ''}" data-af="${r.AF ?? ''}" data-em="${r.EM ?? ''}" data-dre="${norm(r.dre || '')}">
+        data-em="${r.EM ?? ''}" data-dre="${norm(r.dre || '')}">
         ${td(r.pos, 'center', 'font-weight:700;color:#1a365d')}
         ${td(r.nome)}
         ${td(r.nome_mun || '—')}
         ${td(r.dre || '—', 'center', 'font-size:10px;color:#666')}
-        ${td(fmtNum(r.AI), 'center', `font-weight:700;color:${idebColor(r.AI)}`)}
-        ${td(fmtNum(r.AF), 'center', `font-weight:700;color:${idebColor(r.AF)}`)}
         ${td(fmtNum(r.EM), 'center', `font-weight:700;color:${idebColor(r.EM)}`)}
       </tr>`).join('');
 
     return `
       <div class="section-divider">
         <span class="section-divider-icon"><img src="img/icons/escola.png" alt=""></span>
-        <span class="section-divider-text">Ranking de Escolas — SE (${ano})</span>
+        <span class="section-divider-text">Ranking de Escolas — Ensino Médio (${ano})</span>
         <span class="section-divider-line"></span>
       </div>
       <div class="chart-card" style="padding:0;overflow:hidden;margin-bottom:10px">
         <div style="padding:10px 14px;border-bottom:1px solid #e8ecf1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-          <div class="chart-title" style="margin:0">${ranked.length} escolas com IDEB · rede atual</div>
+          <div class="chart-title" style="margin:0">${ranked.length} escolas estaduais com IDEB EM</div>
           <input type="text" id="ideb-se-esc-search" placeholder="Buscar escola ou município..."
             style="font-size:11px;padding:4px 10px;border-radius:5px;border:1px solid #ccc;min-width:220px">
           <span id="ideb-se-esc-count" style="font-size:10.5px;color:#666"></span>
         </div>
         <div style="max-height:480px;overflow:auto">
-          <table id="ideb-se-esc-table" style="width:100%;border-collapse:collapse;min-width:720px">
+          <table id="ideb-se-esc-table" style="width:100%;border-collapse:collapse;min-width:640px">
             <thead><tr>
               ${th('pos', 'Pos.', 'center')}
               ${th('nome', 'Escola')}
               ${th('mun', 'Município')}
               ${th('dre', 'DRE', 'center')}
-              ${th('ai', 'AI', 'center')}
-              ${th('af', 'AF', 'center')}
-              ${th('em', 'EM', 'center')}
+              ${th('em', 'IDEB EM', 'center')}
             </tr></thead>
             <tbody id="ideb-se-esc-tbody">${body}</tbody>
           </table>
         </div>
-        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP ${ano} (planilhas de escolas) · Filtros do banner (DRE/Município) aplicados · Ordenação inicial por AI→AF→EM</div>
+        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP ${ano} (escolas EM) · Microdado municipal/escolar 2025 ainda não disponível — ranking usa ${ano}</div>
       </div>`;
   }
 

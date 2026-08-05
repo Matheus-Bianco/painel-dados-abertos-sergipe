@@ -1,6 +1,6 @@
 # Painel de Dados Abertos — Educação Sergipe (SEED)
 
-Painel estático (HTML/CSS/JS) com GitHub Pages. MVP: aba **IDEB** completa (multi-rede, UF/DRE/município, rankings e comparativo interestadual). Template base: painel estadual UNESCO/RS + UX de rankings do Joinville.
+Painel estático (HTML/CSS/JS) com GitHub Pages. Recorte: **IDEB Ensino Médio · Rede Estadual · Sergipe**, com dados UF oficiais **2025**. Abre direto na aba IDEB (sem home). Template UNESCO/RS + rankings estilo Joinville.
 
 ## Estrutura
 

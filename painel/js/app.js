@@ -10,6 +10,8 @@ Chart.defaults.set('plugins.datalabels', { display: false }); // off by default,
 
 // ── Modo Sergipe (SEED) ──────────────────────────────────
 const SE_MODE = true;
+const SE_EM_ONLY = true;       // painel só Ensino Médio
+const SE_ESTADUAL_ONLY = true; // sem toggle de redes
 const SE = {
   uf: 'SE',
   ufNome: 'Sergipe',
@@ -20,6 +22,7 @@ const SE = {
   geoFile: 'dados/se_municipios.geojson',
   dreLookupFile: 'dados/se_dre_lookup.json',
   dreGeoFile: 'dados/se_dres.geojson',
+  etapa: 'EM',
 };
 function ufSuffix() { return SE_MODE ? ' de Sergipe' : ' do RS'; }
 function regionalLabel() { return SE_MODE ? 'DRE' : 'CRE'; }
@@ -507,6 +510,7 @@ function sectionBanner(icon, title, subtitle, opts = {}) {
  *  @param {string} [disabledMsg] - tooltip message for disabled buttons
  */
 function redeToggleHTML(disabledRedes, disabledMsg) {
+  if (SE_MODE && SE_ESTADUAL_ONLY) return '';
   if (!sectionBanner._lastShowToggle) return '';
   const disabled = new Set(disabledRedes || []);
   return `<div class="rede-toggle-strip" id="rede-toggle">
@@ -3753,7 +3757,7 @@ function buildFunilTurma(ano) {
 // ══════════════════════════════════════════════════════════
 
 const FONTE_SAEB = 'Fonte: ' + fonteLink(URL_SAEB, 'Microdados SAEB — INEP', 'Acessar o SAEB no portal INEP');
-const FONTE_IDEB = 'Fonte: ' + fonteLink(URL_IDEB, 'IDEB/INEP — Divulgação 2023', 'Acessar o IDEB no portal INEP') + ' · ' + fonteLink(URL_IDEB_NOTA, '📘 Nota Técnica do IDEB', 'Nota Técnica nº 1 — Concepção do IDEB (INEP)');
+const FONTE_IDEB = 'Fonte: ' + fonteLink(URL_IDEB, 'IDEB/INEP — Divulgação 2025', 'Acessar o IDEB no portal INEP') + ' · ' + fonteLink(URL_IDEB_NOTA, 'Nota Técnica do IDEB', 'Nota Técnica nº 1 — Concepção do IDEB (INEP)');
 
 function renderSaeb() {
   const saeb = S.saeb;
@@ -4702,20 +4706,26 @@ function renderIdeb() {
   const anoSel = anos.includes(S.anoSel) ? S.anoSel : ultimo;
   const anoIdx = anos.indexOf(anoSel);
   const penultimo = anoIdx > 0 ? anos[anoIdx - 1] : null;
+  // Mapa/tabela mun: último ano com por_municipio (escolas 2023) se anoSel for 2025+
+  const munAnos = Object.keys(ideb.por_municipio || {}).sort();
+  const mapAno = (ideb.por_municipio?.[anoSel] ? anoSel : (munAnos[munAnos.length - 1] || anoSel));
 
   const lastData = getGeoData(anoSel) || {};
   const prevData = penultimo ? (getGeoData(penultimo) || {}) : {};
 
   // ── KPIs ──
-  const etapaMap = {
-    AI: { label: 'Anos Iniciais', icon: 'img/icons/fundamental.png', accent: 'green' },
-    AF: { label: 'Anos Finais', icon: 'img/icons/fundamental.png', accent: 'blue' },
-    EM: { label: 'Ensino Médio', icon: 'img/icons/medio.png', accent: 'red' },
-  };
-  const idebEtapas = ['AI', 'AF', 'EM'];
-  const idebLabels = ['Anos Iniciais', 'Anos Finais', 'Ens. Médio'];
+  if (SE_EM_ONLY) S.idebEtapa = 'EM';
+  const etapaMap = SE_EM_ONLY
+    ? { EM: { label: 'Ensino Médio', icon: 'img/icons/medio.png', accent: 'red' } }
+    : {
+      AI: { label: 'Anos Iniciais', icon: 'img/icons/fundamental.png', accent: 'green' },
+      AF: { label: 'Anos Finais', icon: 'img/icons/fundamental.png', accent: 'blue' },
+      EM: { label: 'Ensino Médio', icon: 'img/icons/medio.png', accent: 'red' },
+    };
+  const idebEtapas = SE_EM_ONLY ? ['EM'] : ['AI', 'AF', 'EM'];
+  const idebLabels = SE_EM_ONLY ? ['Ens. Médio'] : ['Anos Iniciais', 'Anos Finais', 'Ens. Médio'];
   // AI verde institucional · AF laranja · EM vermelho (cores bem distintas na série)
-  const idebCores = [COLORS.pri, COLORS.fundAF, COLORS.red];
+  const idebCores = SE_EM_ONLY ? [COLORS.red] : [COLORS.pri, COLORS.fundAF, COLORS.red];
 
   const kpis = [];
   for (const [ek, cfg] of Object.entries(etapaMap)) {
@@ -4747,9 +4757,9 @@ function renderIdeb() {
   // ════════════════════════════════════════════════════════════════
   main.innerHTML = `
     <div class="section-sticky">
-      ${sectionBanner('img/icons/nav_ideb.png', 'IDEB', geoLabel)}
+      ${sectionBanner('img/icons/nav_ideb.png', SE_EM_ONLY ? 'IDEB Ensino Médio' : 'IDEB', geoLabel + (SE_ESTADUAL_ONLY ? ' · Rede Estadual' : ''))}
       ${redeToggleHTML()}
-      <div class="kpi-strip" id="ideb-kpis" style="grid-template-columns:repeat(3,1fr)"></div>
+      <div class="kpi-strip" id="ideb-kpis" style="grid-template-columns:repeat(${idebEtapas.length},1fr)"></div>
     </div>
 
     <!-- ═══ BLOCO INFORMATIVO: O que é o IDEB? ═══ -->
@@ -4884,11 +4894,12 @@ function renderIdeb() {
     <!-- ═══ EIXO: Decomposição N × P ═══ -->
     <div class="section-divider">
       <span class="section-divider-icon"><img src="img/icons/sec_saeb.png" alt=""></span>
-      <span class="section-divider-text">Decomposição — Nota SAEB (N) × Aprovação (P)</span>
+      <span class="section-divider-text">Decomposição — Nota SAEB (N) × Aprovação (P)${SE_EM_ONLY ? ' · Ensino Médio' : ''}</span>
       <span class="section-divider-line"></span>
     </div>
 
-    <div class="charts-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+    <div class="charts-grid" style="display:grid;grid-template-columns:${SE_EM_ONLY ? '1fr' : '1fr 1fr 1fr'};gap:10px">
+      ${SE_EM_ONLY ? '' : `
       <div class="chart-card">
         <div class="chart-title">Anos Iniciais</div>
         <div style="height:280px"><canvas id="chart-decomp-ai"></canvas></div>
@@ -4898,7 +4909,7 @@ function renderIdeb() {
         <div class="chart-title">Anos Finais</div>
         <div style="height:280px"><canvas id="chart-decomp-af"></canvas></div>
         <div class="chart-source">${FONTE_IDEB}</div>
-      </div>
+      </div>`}
       <div class="chart-card">
         <div class="chart-title">Ensino Médio</div>
         <div style="height:280px"><canvas id="chart-decomp-em"></canvas></div>
@@ -4917,23 +4928,28 @@ function renderIdeb() {
     <div class="map-table-row d1">
       <div class="map-container">
         <div class="map-toolbar">
-          <h3>Mapa — IDEB <span id="ideb-map-ano">${anoSel}</span></h3>
+          <h3>Mapa — IDEB EM <span id="ideb-map-ano">${mapAno}</span></h3>
           <div class="map-layer-toggle">
             <button class="map-layer-btn active" id="ideb-btn-layer-mun">Municípios</button>
             <button class="map-layer-btn" id="ideb-btn-layer-cre">${SE_MODE ? 'DREs' : 'CREs'}</button>
           </div>
+          ${SE_EM_ONLY ? `<span style="font-size:11px;font-weight:600;color:#555;padding:3px 8px">Ensino Médio</span>` : `
           <select id="sel-ideb-map-etapa" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid #ccc">
             <option value="AI" ${S.idebEtapa === 'AI' ? 'selected' : ''}>Anos Iniciais</option>
             <option value="AF" ${S.idebEtapa === 'AF' ? 'selected' : ''}>Anos Finais</option>
             <option value="EM" ${S.idebEtapa === 'EM' ? 'selected' : ''}>Ensino Médio</option>
-          </select>
+          </select>`}
         </div>
-        <div style="font-size:9.5px;color:#888;padding:4px 0 2px;line-height:1.4;font-style:italic">Municípios sem escolas na etapa selecionada aparecem em cinza. Alterne a etapa acima para visualizar outros níveis.</div>
+        <div style="font-size:9.5px;color:#888;padding:4px 0 2px;line-height:1.4;font-style:italic">
+          ${SE_EM_ONLY && mapAno !== anoSel
+            ? `Mapa/tabela municipal com dados de escolas ${mapAno} (INEP ainda não divulgou microdado municipal 2025). KPIs e UFs usam ${anoSel}.`
+            : 'Municípios sem escolas na etapa selecionada aparecem em cinza.'}
+        </div>
         <div id="ideb-map-leaflet" style="height:370px;border-radius:8px"></div>
       </div>
       <div class="table-wrapper" id="ideb-table-wrapper">
         <div class="table-header">
-          <h3>Tabela de Municípios — IDEB ${anoSel}</h3>
+          <h3>Tabela de Municípios — IDEB EM ${mapAno}</h3>
           <input type="text" class="table-search" id="ideb-mun-search" placeholder="Buscar...">
         </div>
         <div style="font-size:10px;color:var(--accent);padding:4px 12px 6px;font-weight:600;background:rgba(255,203,4,.08);border-radius:0 0 6px 6px;border-top:1px dashed rgba(255,203,4,.3)">
@@ -4944,9 +4960,14 @@ function renderIdeb() {
             <thead><tr>
               <th>#</th>
               <th data-col="nome" class="sortable" style="cursor:pointer">Município \u25b2\u25bc</th>
+              ${SE_EM_ONLY ? `
+              <th data-col="em" class="sortable" style="cursor:pointer">IDEB EM \u25b2\u25bc</th>
+              <th data-col="esc" class="sortable" style="cursor:pointer">Escolas \u25b2\u25bc</th>
+              ` : `
               <th data-col="ai" class="sortable" style="cursor:pointer">AI \u25b2\u25bc</th>
               <th data-col="af" class="sortable" style="cursor:pointer">AF \u25b2\u25bc</th>
               <th data-col="em" class="sortable" style="cursor:pointer">EM \u25b2\u25bc</th>
+              `}
             </tr></thead>
             <tbody></tbody>
           </table>
@@ -5127,8 +5148,8 @@ function renderIdeb() {
     const mapEl = document.getElementById('ideb-map-leaflet');
     if (!mapEl) return;
 
-    const munData = ideb.por_municipio?.[anoSel] || {};
-    const mapEtapa = S.idebEtapa || 'AI';
+    const munData = ideb.por_municipio?.[mapAno] || ideb.por_municipio?.[anoSel] || {};
+    const mapEtapa = SE_EM_ONLY ? 'EM' : (S.idebEtapa || 'AI');
 
     destroyMap();
     S.map = L.map('ideb-map-leaflet', { zoomControl: true, scrollWheelZoom: true, attributionControl: false })
@@ -5188,8 +5209,8 @@ function renderIdeb() {
     if (S.mapLegend) { S.mapLegend.remove(); S.mapLegend = null; }
 
     const munToCre = S.creLookup?.mun_to_cre || {};
-    const munData = ideb.por_municipio?.[anoSel] || {};
-    const mapEtapa = S.idebEtapa || 'AI';
+    const munData = ideb.por_municipio?.[mapAno] || ideb.por_municipio?.[anoSel] || {};
+    const mapEtapa = SE_EM_ONLY ? 'EM' : (S.idebEtapa || 'AI');
 
     const creData = {};
     for (const [cod, v] of Object.entries(munData)) {
@@ -5233,12 +5254,12 @@ function renderIdeb() {
   // ════════════════════════════════════════════════════════════════
   //  TABLE: Municipality ranking
   // ════════════════════════════════════════════════════════════════
-  let idebSortCol = 'ai', idebSortAsc = false, idebSearchStr = '';
+  let idebSortCol = SE_EM_ONLY ? 'em' : 'ai', idebSortAsc = false, idebSearchStr = '';
 
   const idebBuildMunTable = () => {
     const tbody = document.querySelector('#ideb-mun-table tbody');
     if (!tbody) return;
-    const munData = ideb.por_municipio?.[anoSel] || {};
+    const munData = ideb.por_municipio?.[mapAno] || ideb.por_municipio?.[anoSel] || {};
 
     let entries = Object.entries(munData);
     if (S.creSel && S.creLookup?.mun_to_cre) {
@@ -5267,6 +5288,8 @@ function renderIdeb() {
         va = ma.AF?.ideb || 0; vb = mb.AF?.ideb || 0;
       } else if (idebSortCol === 'em') {
         va = ma.EM?.ideb || 0; vb = mb.EM?.ideb || 0;
+      } else if (idebSortCol === 'esc') {
+        va = ma.EM?.n_escolas || 0; vb = mb.EM?.n_escolas || 0;
       }
       return idebSortAsc ? va - vb : vb - va;
     });
@@ -5280,9 +5303,9 @@ function renderIdeb() {
       <tr style="cursor:pointer" class="${S.munSel === cod ? 'selected' : ''}" data-cod="${cod}">
         <td>${i + 1}</td>
         <td><strong>${lookup[cod] || cod}</strong></td>
-        ${colorCell(md.AI?.ideb)}
-        ${colorCell(md.AF?.ideb)}
-        ${colorCell(md.EM?.ideb)}
+        ${SE_EM_ONLY
+          ? `${colorCell(md.EM?.ideb)}<td style="text-align:center;color:#666">${md.EM?.n_escolas ?? '—'}</td>`
+          : `${colorCell(md.AI?.ideb)}${colorCell(md.AF?.ideb)}${colorCell(md.EM?.ideb)}`}
       </tr>`).join('');
 
     // Click to filter
@@ -15623,28 +15646,39 @@ async function init() {
   initNav();
   initInfoTooltips();
 
-  const deepView = getViewFromUrl();
+  // SE: abrir direto no IDEB (sem home)
+  const defaultView = (SE_MODE) ? 'ideb' : 'home';
+  const deepView = getViewFromUrl() || defaultView;
   if (deepView && deepView !== 'home') {
     const tab = document.querySelector(`.sidebar-tab[data-view="${deepView}"]`);
     if (tab) tab.click();
+    else if (SE_MODE) { S._currentView = 'ideb'; syncViewToUrl('ideb'); }
     else renderHome();
+  } else if (SE_MODE) {
+    const tab = document.getElementById('tab-ideb');
+    if (tab) tab.click();
+    else { S._currentView = 'ideb'; syncViewToUrl('ideb'); }
   } else {
     renderHome();
     syncViewToUrl('home');
   }
 
   window.addEventListener('popstate', () => {
-    const v = getViewFromUrl() || 'home';
+    const v = getViewFromUrl() || (SE_MODE ? 'ideb' : 'home');
     if (S._currentView === v) return;
     const tab = document.querySelector(`.sidebar-tab[data-view="${v}"]`);
     if (tab) {
       S._skipUrlSync = true;
       tab.click();
+    } else if (SE_MODE && typeof renderIdeb === 'function' && S.loaded) {
+      renderIdeb();
     }
   });
 
   try {
     if (SE_MODE) {
+      S.redeSel = 'estadual';
+      S.idebEtapa = 'EM';
       // MVP Sergipe: apenas IDEB + geo + DRE lookup
       const [respIdeb, respGeo, respDre, respCreGeo] = await Promise.all([
         fetch('dados/4_7_ideb.json'),
