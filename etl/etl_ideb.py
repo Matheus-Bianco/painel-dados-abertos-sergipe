@@ -281,7 +281,15 @@ def extract_mun_from_esc(df, rede_filter):
     return por_ano, lookup
 
 
-def build_escolas(df, rede_filter, dre_lookup, ano):
+def _ano_anterior_ideb(ano):
+    """Ano de divulgação anterior (IDEB bienal)."""
+    try:
+        return str(int(ano) - 2)
+    except (TypeError, ValueError):
+        return None
+
+
+def build_escolas(df, rede_filter, dre_lookup, ano, se_ideb=None):
     work = df[df["REDE"].isin(rede_filter)].copy()
     obs_col = f"VL_OBSERVADO_{ano}"
     if obs_col not in work.columns:
@@ -289,6 +297,8 @@ def build_escolas(df, rede_filter, dre_lookup, ano):
         anos = [a for a in EM_CFG["anos_ideb"] if f"VL_OBSERVADO_{a}" in work.columns]
         ano = str(anos[-1]) if anos else ano
         obs_col = f"VL_OBSERVADO_{ano}"
+    ano_ant = _ano_anterior_ideb(ano)
+    obs_ant = f"VL_OBSERVADO_{ano_ant}" if ano_ant else None
     lista = []
     for _, row in work.iterrows():
         ideb = safe_numeric(row[obs_col]) if obs_col in work.columns else None
@@ -299,6 +309,9 @@ def build_escolas(df, rede_filter, dre_lookup, ano):
             continue
         cod_mun = str(int(float(row["CO_MUNICIPIO"])))[:7] if pd.notna(row["CO_MUNICIPIO"]) else None
         mun_info = dre_lookup.get(cod_mun) or {}
+        ideb_ant = safe_numeric(row[obs_ant]) if obs_ant and obs_ant in work.columns else None
+        delta_ant = round(ideb - ideb_ant, 2) if ideb_ant is not None else None
+        delta_se = round(ideb - se_ideb, 2) if se_ideb is not None else None
         lista.append({
             "cod_escola": eid,
             "nome": str(row["NO_ESCOLA"]),
@@ -308,6 +321,10 @@ def build_escolas(df, rede_filter, dre_lookup, ano):
             "dre": mun_info.get("dre") or mun_info.get("cod_dre"),
             "nome_dre": mun_info.get("nome_dre") or mun_info.get("nome_cre"),
             "EM": round(ideb, 2),
+            "ideb_ant": round(ideb_ant, 2) if ideb_ant is not None else None,
+            "delta_vs_ant": delta_ant,
+            "delta_vs_se": delta_se,
+            "ano_ant": int(ano_ant) if ano_ant and ideb_ant is not None else None,
         })
     lista.sort(key=lambda e: (-(e.get("EM") or 0), e["nome"]))
     return lista, str(ano)
@@ -315,6 +332,8 @@ def build_escolas(df, rede_filter, dre_lookup, ano):
 
 def build_rankings_municipios(resultado, ano):
     mun_ano = resultado.get("por_municipio", {}).get(ano, {})
+    ano_ant = _ano_anterior_ideb(ano)
+    mun_ant = resultado.get("por_municipio", {}).get(ano_ant, {}) if ano_ant else {}
     lookup = resultado.get("lookup_municipios", {})
     se_ideb = (resultado.get("serie_temporal", {}).get(ano, {}).get(ETAPA) or {}).get("ideb")
     rows = []
@@ -322,15 +341,21 @@ def build_rankings_municipios(resultado, ano):
         d = vals.get(ETAPA)
         if d and d.get("ideb") is not None:
             delta = round(d["ideb"] - se_ideb, 2) if se_ideb is not None else None
+            ideb_ant = (mun_ant.get(cod) or {}).get(ETAPA, {}).get("ideb")
+            delta_ant = round(d["ideb"] - ideb_ant, 2) if ideb_ant is not None else None
             rows.append({
                 "cod": cod, "nome": lookup.get(cod, cod), "ideb": d["ideb"],
                 "n_escolas": d.get("n_escolas"), "delta_vs_se": delta,
+                "ideb_ant": ideb_ant,
+                "delta_vs_ant": delta_ant,
+                "ano_ant": int(ano_ant) if ano_ant and ideb_ant is not None else None,
             })
     rows.sort(key=lambda r: (-r["ideb"], r["nome"]))
     for i, r in enumerate(rows, 1):
         r["pos"] = i
     return {
         "ano": int(ano),
+        "ano_ant": int(ano_ant) if ano_ant else None,
         "etapas": {
             ETAPA: {
                 "n": len(rows), "se_ideb": se_ideb,
@@ -379,15 +404,22 @@ def _se_empate_resumo(rows, pos_key="pos"):
 
 def build_rankings_ufs(por_uf_estadual, ano):
     ufs_ano = por_uf_estadual.get(ano) or {}
+    ano_ant = _ano_anterior_ideb(ano)
+    ufs_ant = por_uf_estadual.get(ano_ant) or {} if ano_ant else {}
     se_ideb = (ufs_ano.get(SG_UF) or {}).get(ETAPA)
     rows = []
     for sg, vals in ufs_ano.items():
         if vals.get(ETAPA) is None:
             continue
         delta = round(vals[ETAPA] - se_ideb, 2) if se_ideb is not None else None
+        ideb_ant = (ufs_ant.get(sg) or {}).get(ETAPA)
+        delta_ant = round(vals[ETAPA] - ideb_ant, 2) if ideb_ant is not None else None
         rows.append({
             "uf": sg, "nome": UF_SG_TO_NOME.get(sg, sg), "ideb": vals[ETAPA],
             "delta_vs_se": delta, "is_se": sg == SG_UF, "is_ne": sg in NE_UFS,
+            "ideb_ant": ideb_ant,
+            "delta_vs_ant": delta_ant,
+            "ano_ant": int(ano_ant) if ano_ant and ideb_ant is not None else None,
         })
     rows.sort(key=lambda r: (-r["ideb"], r["nome"]))
     for i, r in enumerate(rows, 1):
@@ -415,7 +447,9 @@ def build_rankings_ufs(por_uf_estadual, ano):
         "todos": ne_rows,
     }
     return {
-        "ano": int(ano), "rede": "Estadual",
+        "ano": int(ano),
+        "ano_ant": int(ano_ant) if ano_ant else None,
+        "rede": "Estadual",
         "etapas": {ETAPA: bloco},
         "nordeste": {"etapas": {ETAPA: bloco_ne}},
     }
@@ -531,7 +565,10 @@ def main():
         if ano not in resultado["serie_temporal"] or ETAPA not in resultado["serie_temporal"][ano]:
             resultado["serie_temporal"].setdefault(ano, {})[ETAPA] = {**o, "fonte": "oficial_inep_uf"}
 
-    escolas, ano_esc = build_escolas(df_esc, REDE_FILTER, dre_lookup, ano_mun)
+    se_ideb_esc = (resultado["serie_temporal"].get(str(ano_mun), {}) or {}).get(ETAPA, {}).get("ideb")
+    if se_ideb_esc is None:
+        se_ideb_esc = (por_uf.get(str(ano_uf), {}) or {}).get(SG_UF, {}).get(ETAPA)
+    escolas, ano_esc = build_escolas(df_esc, REDE_FILTER, dre_lookup, ano_mun, se_ideb=se_ideb_esc)
     print(f"  Municipios EM ({ano_mun}): {len(por_mun.get(ano_mun, {}))}")
     print(f"  Escolas EM ({ano_esc}): {len(escolas)}")
     print(f"  SE pos BR {ano_uf}: {ufs_rank['etapas'][ETAPA]['se_pos']} · NE: {ufs_rank['nordeste']['etapas'][ETAPA]['se_pos']}")
@@ -543,7 +580,13 @@ def main():
         "municipios": build_rankings_municipios(resultado, ano_mun),
         "ufs_estadual": ufs_rank,
         "posicao_se_serie": pos_serie,
-        "escolas": {"ano": int(ano_esc), "n": len(escolas), "lista": escolas},
+        "escolas": {
+            "ano": int(ano_esc),
+            "ano_ant": (lambda a: int(a) if a else None)(_ano_anterior_ideb(ano_esc)),
+            "n": len(escolas),
+            "lista": escolas,
+            "se_ideb": se_ideb_esc,
+        },
     }
 
     for name in ("4_7_ideb_estadual.json", "4_7_ideb.json"):

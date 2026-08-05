@@ -73,12 +73,16 @@
     fullRows.forEach((r, i) => { r.pos = i + 1; });
     const seIdeb = rk.etapas[fullEt]?.se_ideb;
 
+    const anoAnt = rk.ano_ant || (Number(ano) - 2);
     const fullBody = fullRows.map(r => {
       const delta = r.delta_vs_se;
-      return `<tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-ideb="${r.ideb ?? ''}" data-delta="${delta ?? ''}">
+      const dAnt = r.delta_vs_ant;
+      return `<tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-ideb="${r.ideb ?? ''}" data-delta="${delta ?? ''}" data-dant="${dAnt ?? ''}" data-iant="${r.ideb_ant ?? ''}">
         <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px;font-weight:700;color:#1a365d">${r.pos}</td>
         <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:11px">${r.nome}</td>
+        <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px;color:#64748b">${fmtNum(r.ideb_ant)}</td>
         <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px;font-weight:700;color:${idebColor(r.ideb)}">${fmtNum(r.ideb)}</td>
+        <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px">${fmtDelta(dAnt)}</td>
         <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px">${fmtDelta(delta)}</td>
       </tr>`;
     }).join('');
@@ -108,13 +112,15 @@
             <thead><tr>
               ${th('pos', 'Posição', 'center')}
               ${th('nome', 'Município')}
-              ${th('ideb', 'IDEB', 'center')}
+              ${th('iant', `IDEB ${anoAnt}`, 'center')}
+              ${th('ideb', `IDEB ${ano}`, 'center')}
+              ${th('dant', `Δ ${anoAnt}→${ano}`, 'center')}
               ${th('delta', 'Δ vs SE', 'center')}
             </tr></thead>
             <tbody id="ideb-se-mun-full-tbody">${fullBody}</tbody>
           </table>
         </div>
-        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP ${ano} · Δ = município − IDEB SE (mesma rede)</div>
+        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP · Δ ${anoAnt}→${ano} = progresso · Δ vs SE = município − IDEB SE ${ano}</div>
       </div>`;
   }
 
@@ -123,15 +129,20 @@
     const tbody = document.getElementById('ideb-se-mun-full-tbody');
     const countEl = document.getElementById('ideb-se-mun-full-count');
     if (!rk || !tbody) return;
+    const ano = String(rk.ano || '2025');
+    const anoAnt = rk.ano_ant || (Number(ano) - 2);
     let rows = filterMunRows(rk.etapas[et]?.todos || [], creSel);
     rows = rows.map(r => ({ ...r })).sort((a, b) => (b.ideb - a.ideb) || a.nome.localeCompare(b.nome, 'pt-BR'));
     rows.forEach((r, i) => { r.pos = i + 1; });
     tbody.innerHTML = rows.map(r => {
       const delta = r.delta_vs_se;
-      return `<tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-ideb="${r.ideb ?? ''}" data-delta="${delta ?? ''}">
+      const dAnt = r.delta_vs_ant;
+      return `<tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-ideb="${r.ideb ?? ''}" data-delta="${delta ?? ''}" data-dant="${dAnt ?? ''}" data-iant="${r.ideb_ant ?? ''}">
         <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px;font-weight:700;color:#1a365d">${r.pos}</td>
         <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:11px">${r.nome}</td>
+        <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px;color:#64748b">${fmtNum(r.ideb_ant)}</td>
         <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px;font-weight:700;color:${idebColor(r.ideb)}">${fmtNum(r.ideb)}</td>
+        <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px">${fmtDelta(dAnt)}</td>
         <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee;font-size:11px">${fmtDelta(delta)}</td>
       </tr>`;
     }).join('');
@@ -183,16 +194,19 @@
       </div>`;
     };
 
+    const anoAnt = rk.ano_ant || (Number(ano) - 2);
     const buildUfTable = (et) => {
       const rows = scopeData.etapas[et]?.todos || [];
       const posKey = mode === 'nordeste' ? 'pos_ne' : 'pos';
       const body = rows.map(r => {
         const pos = r[posKey] ?? r.pos;
         const bg = r.is_se ? 'background:rgba(26,54,93,.08);font-weight:700;' : '';
-        return `<tr style="${bg}" data-pos="${pos ?? ''}" data-nome="${norm(r.nome)}" data-ideb="${r.ideb ?? ''}" data-delta="${r.is_se ? 0 : (r.delta_vs_se ?? '')}">
+        return `<tr style="${bg}" data-pos="${pos ?? ''}" data-nome="${norm(r.nome)}" data-ideb="${r.ideb ?? ''}" data-delta="${r.is_se ? 0 : (r.delta_vs_se ?? '')}" data-dant="${r.delta_vs_ant ?? ''}" data-iant="${r.ideb_ant ?? ''}">
           ${td(fmtEmpatePos(r, posKey), 'center', 'font-weight:700;color:#1a365d')}
           ${td(r.is_se ? `<strong>${r.uf} — ${r.nome}</strong>` : `${r.uf} — ${r.nome}`)}
+          ${td(fmtNum(r.ideb_ant), 'center', 'color:#64748b')}
           ${td(fmtNum(r.ideb), 'center', `font-weight:700;color:${idebColor(r.ideb)}`)}
+          ${td(fmtDelta(r.delta_vs_ant), 'center')}
           ${td(fmtDelta(r.is_se ? 0 : r.delta_vs_se), 'center')}
         </tr>`;
       }).join('');
@@ -206,14 +220,16 @@
               <thead><tr>
                 ${th('pos', 'Pos.', 'center')}
                 ${th('nome', 'UF')}
-                ${th('ideb', 'IDEB', 'center')}
+                ${th('iant', `IDEB ${anoAnt}`, 'center')}
+                ${th('ideb', `IDEB ${ano}`, 'center')}
+                ${th('dant', `Δ ${anoAnt}→${ano}`, 'center')}
                 ${th('delta', 'Δ vs SE', 'center')}
               </tr></thead>
               <tbody>${body}</tbody>
             </table>
           </div>
           ${empateNote(et)}
-          <div class="chart-source" style="padding:8px 12px">* Empate de IDEB · Rede Estadual · INEP ${ano}</div>
+          <div class="chart-source" style="padding:8px 12px">* Empate · Δ ${anoAnt}→${ano} = progresso · Δ vs SE = UF − Sergipe · Rede Estadual INEP</div>
         </div>`;
     };
 
@@ -478,14 +494,20 @@
     });
     ranked.forEach((r, i) => { r.pos = i + 1; });
 
+    const anoAnt = esc.ano_ant || (Number(ano) - 2);
+    const seIdebEsc = esc.se_ideb;
     const body = ranked.map(r => `
       <tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-mun="${norm(r.nome_mun)}"
-        data-em="${r.EM ?? ''}" data-dre="${norm(r.dre || '')}">
+        data-em="${r.EM ?? ''}" data-iant="${r.ideb_ant ?? ''}" data-dant="${r.delta_vs_ant ?? ''}"
+        data-delta="${r.delta_vs_se ?? ''}" data-dre="${norm(r.dre || '')}">
         ${td(r.pos, 'center', 'font-weight:700;color:#1a365d')}
         ${td(r.nome)}
         ${td(r.nome_mun || '—')}
         ${td(r.dre || '—', 'center', 'font-size:10px;color:#666')}
+        ${td(fmtNum(r.ideb_ant), 'center', 'color:#64748b')}
         ${td(fmtNum(r.EM), 'center', `font-weight:700;color:${idebColor(r.EM)}`)}
+        ${td(fmtDelta(r.delta_vs_ant), 'center')}
+        ${td(fmtDelta(r.delta_vs_se), 'center')}
       </tr>`).join('');
 
     return `
@@ -496,24 +518,29 @@
       </div>
       <div class="chart-card" style="padding:0;overflow:hidden;margin-bottom:10px">
         <div style="padding:10px 14px;border-bottom:1px solid #e8ecf1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-          <div class="chart-title" style="margin:0">${ranked.length} escolas estaduais com IDEB EM</div>
+          <div class="chart-title" style="margin:0">${ranked.length} escolas estaduais com IDEB EM
+            ${seIdebEsc != null ? `<span style="font-size:10.5px;font-weight:500;color:#555;margin-left:8px">SE ${ano}: <strong style="color:#1a365d">${fmtNum(seIdebEsc)}</strong></span>` : ''}
+          </div>
           <input type="text" id="ideb-se-esc-search" placeholder="Buscar escola ou município..."
             style="font-size:11px;padding:4px 10px;border-radius:5px;border:1px solid #ccc;min-width:220px">
           <span id="ideb-se-esc-count" style="font-size:10.5px;color:#666"></span>
         </div>
         <div style="max-height:480px;overflow:auto">
-          <table id="ideb-se-esc-table" style="width:100%;border-collapse:collapse;min-width:640px">
+          <table id="ideb-se-esc-table" style="width:100%;border-collapse:collapse;min-width:760px">
             <thead><tr>
               ${th('pos', 'Pos.', 'center')}
               ${th('nome', 'Escola')}
               ${th('mun', 'Município')}
               ${th('dre', 'DRE', 'center')}
-              ${th('em', 'IDEB EM', 'center')}
+              ${th('iant', `IDEB ${anoAnt}`, 'center')}
+              ${th('em', `IDEB ${ano}`, 'center')}
+              ${th('dant', `Δ ${anoAnt}→${ano}`, 'center')}
+              ${th('delta', 'Δ vs SE', 'center')}
             </tr></thead>
             <tbody id="ideb-se-esc-tbody">${body}</tbody>
           </table>
         </div>
-        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP ${ano} — escolas da rede estadual (Ensino Médio)</div>
+        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP · Δ ${anoAnt}→${ano} = progresso da escola · Δ vs SE = escola − IDEB SE ${ano}</div>
       </div>`;
   }
 
