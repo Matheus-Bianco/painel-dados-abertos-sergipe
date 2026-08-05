@@ -2579,12 +2579,36 @@ body.no-sidebar .main {
   width: 100%;
   max-width: 100%;
   margin: 0;
+  /* Só .main-scroll rola — necessário para position:sticky funcionar */
+  overflow: hidden;
 }
 body.no-sidebar .main-scroll {
-  padding: 12px 18px 28px;
+  padding: 0 18px 28px;
   max-width: 1400px;
   margin: 0 auto;
   box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
+}
+/* Sticky header: cobrir a largura do scroll e fundo opaco (sem vazamento) */
+body.no-sidebar .section-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  isolation: isolate;
+  overflow: visible;
+  background: #f5f7fa;
+  margin-left: -18px;
+  margin-right: -18px;
+  margin-bottom: 10px;
+  padding: 10px 18px 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+}
+body.no-sidebar .section-sticky .section-banner {
+  position: relative;
+  z-index: 2;
 }
 body.se-em-panel .section-banner-bg {
   background-image: url('../img/transparente_alunos.png');
@@ -2592,6 +2616,7 @@ body.se-em-panel .section-banner-bg {
   background-position: center 30%;
   opacity: .28;
   filter: none;
+  pointer-events: none;
 }
 body.se-em-panel .section-banner {
   background: linear-gradient(135deg, #0d3b66 0%, #14507f 45%, #1d71b9 100%);

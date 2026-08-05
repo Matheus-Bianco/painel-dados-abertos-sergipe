@@ -67,59 +67,11 @@
     const ano = String(rk.ano || anoSel || '2023');
     const etapas = ETAPAS_ATIVAS().filter(et => (rk.etapas?.[et]?.todos || []).length);
 
-    const kpiCards = etapas.map(et => {
-      const info = rk.etapas[et];
-      const se = info.se_ideb;
-      return `
-        <div class="kpi-card" style="padding:12px 16px;border-top:3px solid ${ET_COLOR[et]}">
-          <div class="kpi-label">SE — ${ET_LABEL[et]}</div>
-          <div class="kpi-value" style="font-size:1.5rem">${fmtNum(se)}</div>
-          <div class="kpi-footer"><span>${info.n} municípios com IDEB</span><span class="kpi-abs">${ano}</span></div>
-        </div>`;
-    }).join('');
-
-    const buildTable = (et) => {
-      let rows = filterMunRows(rk.etapas[et]?.todos || [], creSel);
-      // re-rank after DRE filter
-      rows = rows.map(r => ({ ...r })).sort((a, b) => (b.ideb - a.ideb) || a.nome.localeCompare(b.nome, 'pt-BR'));
-      rows.forEach((r, i) => { r.pos = i + 1; });
-      const contraste = rows.slice(0, 15);
-      const seIdeb = rk.etapas[et]?.se_ideb;
-      const body = contraste.map(r => {
-        const delta = r.delta_vs_se != null ? r.delta_vs_se : (seIdeb != null ? +(r.ideb - seIdeb).toFixed(2) : null);
-        return `<tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-ideb="${r.ideb ?? ''}" data-delta="${delta ?? ''}">
-          ${td(r.pos, 'center', 'font-weight:700;color:#1a365d')}
-          ${td(r.nome)}
-          ${td(fmtNum(r.ideb), 'center', `font-weight:700;color:${idebColor(r.ideb)}`)}
-          ${td(fmtDelta(delta), 'center')}
-        </tr>`;
-      }).join('');
-      return `
-        <div class="chart-card" style="padding:0;overflow:hidden">
-          <div style="padding:10px 14px;border-bottom:1px solid #e8ecf1;display:flex;justify-content:space-between;align-items:center;gap:8px">
-            <div class="chart-title" style="margin:0">Ranking SE — ${ET_LABEL[et]} (${ano})</div>
-            <div style="font-size:10.5px;color:#555">SE: <strong style="color:#1a365d">${fmtNum(seIdeb)}</strong> · ${rows.length} mun.</div>
-          </div>
-          <div style="max-height:340px;overflow-y:auto">
-            <table id="ideb-se-mun-${et.toLowerCase()}-table" style="width:100%;border-collapse:collapse">
-              <thead><tr>
-                ${th('pos', 'Pos.', 'center')}
-                ${th('nome', 'Município')}
-                ${th('ideb', 'IDEB', 'center')}
-                ${th('delta', 'Δ vs SE', 'center')}
-              </tr></thead>
-              <tbody>${body}</tbody>
-            </table>
-          </div>
-          <div class="chart-source" style="padding:8px 12px">Top 15 · Δ vs média/IDEB estadual da rede · Fonte: IDEB/INEP ${ano}</div>
-        </div>`;
-    };
-
-    // Ranking completo (AI como principal + tabs via select)
-    const fullEt = etapas[0] || 'AI';
+    const fullEt = etapas[0] || 'EM';
     let fullRows = filterMunRows(rk.etapas[fullEt]?.todos || [], creSel);
     fullRows = fullRows.map(r => ({ ...r })).sort((a, b) => (b.ideb - a.ideb) || a.nome.localeCompare(b.nome, 'pt-BR'));
     fullRows.forEach((r, i) => { r.pos = i + 1; });
+    const seIdeb = rk.etapas[fullEt]?.se_ideb;
 
     const fullBody = fullRows.map(r => {
       const delta = r.delta_vs_se;
@@ -131,27 +83,21 @@
       </tr>`;
     }).join('');
 
-    const gridCols = etapas.length === 3 ? '1fr 1fr 1fr' : (etapas.length === 2 ? '1fr 1fr' : '1fr');
-
     return `
       <div class="section-divider">
         <span class="section-divider-icon"><img src="img/icons/panorama.png" alt=""></span>
-        <span class="section-divider-text">Ranking e contrastes — Municípios SE (${ano})</span>
+        <span class="section-divider-text">Ranking completo — Municípios SE (${ano})</span>
         <span class="section-divider-line"></span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(${etapas.length},1fr);gap:10px;margin-bottom:10px">
-        ${kpiCards}
-      </div>
-      <div class="charts-grid" style="display:grid;grid-template-columns:${gridCols};gap:10px;margin-bottom:10px">
-        ${etapas.map(buildTable).join('')}
       </div>
       <div class="chart-card" style="padding:0;overflow:hidden;margin-bottom:10px">
         <div style="padding:10px 14px;border-bottom:1px solid #e8ecf1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div class="chart-title" style="margin:0">Ranking completo — ${ET_LABEL[fullEt]}</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:10.5px;color:#555">SE: <strong style="color:#1a365d">${fmtNum(seIdeb)}</strong></span>
+            ${etapas.length > 1 ? `
             <select id="ideb-se-mun-full-et" style="font-size:11px;padding:4px 8px;border-radius:5px;border:1px solid #ccc;background:#fff">
               ${etapas.map(et => `<option value="${et}" ${et === fullEt ? 'selected' : ''}>${ET_LABEL[et]}</option>`).join('')}
-            </select>
+            </select>` : `<input type="hidden" id="ideb-se-mun-full-et" value="${fullEt}">`}
             <input type="text" id="ideb-se-mun-full-search" placeholder="Buscar município..."
               style="font-size:11px;padding:4px 10px;border-radius:5px;border:1px solid #ccc;min-width:180px">
             <span id="ideb-se-mun-full-count" style="font-size:10.5px;color:#666"></span>
@@ -206,17 +152,6 @@
     const scopeData = mode === 'nordeste' ? rk.nordeste : rk;
     const etapas = ETAPAS_ATIVAS().filter(et => (scopeData.etapas?.[et]?.todos || []).length);
 
-    const kpis = etapas.map(et => {
-      const info = scopeData.etapas[et];
-      const label = mode === 'nordeste' ? 'Nordeste' : 'Brasil';
-      return `
-        <div class="kpi-card" style="padding:12px 16px;border-top:3px solid ${ET_COLOR[et]}">
-          <div class="kpi-label">Posição SE — ${ET_LABEL[et]} (${label})</div>
-          <div class="kpi-value" style="font-size:1.5rem">${info.se_pos ?? '—'}º <span style="font-size:.85rem;font-weight:500;color:#666">de ${info.n}</span></div>
-          <div class="kpi-footer"><span>IDEB ${fmtNum(info.se_ideb)}</span><span class="kpi-abs">rede estadual</span></div>
-        </div>`;
-    }).join('');
-
     const buildUfTable = (et) => {
       const rows = scopeData.etapas[et]?.todos || [];
       const posKey = mode === 'nordeste' ? 'pos_ne' : 'pos';
@@ -262,10 +197,7 @@
         <button type="button" class="rede-toggle-btn${mode === 'nordeste' ? ' active' : ''}" id="ideb-uf-scope-ne" data-scope="nordeste">Só Nordeste</button>
         <span style="font-size:10px;color:#888;margin-left:4px">Sempre rede estadual oficial do INEP</span>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(${Math.max(etapas.length, 1)},1fr);gap:10px;margin-bottom:10px">
-        ${kpis}
-      </div>
-      <div class="charts-grid" style="display:grid;grid-template-columns:${etapas.length === 3 ? '1fr 1fr 1fr' : '1fr 1fr'};gap:10px;margin-bottom:10px">
+      <div class="charts-grid" style="display:grid;grid-template-columns:${etapas.length === 3 ? '1fr 1fr 1fr' : '1fr'};gap:10px;margin-bottom:10px">
         ${etapas.map(buildUfTable).join('')}
       </div>
       <div class="chart-card" style="margin-bottom:10px">
@@ -474,10 +406,6 @@
 
   function bindAll(ideb) {
     const S = global.S || {};
-    // mun contraste tables
-    ['ai', 'af', 'em'].forEach(slug => {
-      bindSortable(document.getElementById(`ideb-se-mun-${slug}-table`), { defaultCol: 'pos', defaultAsc: true });
-    });
     bindSortable(document.getElementById('ideb-se-mun-full-table'), { defaultCol: 'pos', defaultAsc: true });
     bindSearchFilter('ideb-se-mun-full-search', 'ideb-se-mun-full-tbody', 'ideb-se-mun-full-count', 'município');
 
@@ -508,13 +436,13 @@
     bindSearchFilter('ideb-se-esc-search', 'ideb-se-esc-tbody', 'ideb-se-esc-count', 'escola');
   }
 
-  /** HTML dos três blocos (inserir após evolução). */
+  /** HTML dos blocos (UFs logo após evolução → ranking mun → escolas). */
   function buildBlocksHTML(ideb, anoSel, creSel, munSel) {
     if (!ideb) return '';
     if (global.S && !global.S.idebUfScope) global.S.idebUfScope = 'nordeste';
     return (
-      buildMunicipiosHTML(ideb, anoSel, creSel) +
       buildUfsHTML(ideb) +
+      buildMunicipiosHTML(ideb, anoSel, creSel) +
       buildEscolasHTML(ideb, creSel, munSel)
     );
   }
@@ -531,9 +459,9 @@
           Comparar com
           <select id="ideb-se-cmp" style="font-size:11px;padding:4px 8px;border-radius:5px;border:1px solid #ccc;background:#fff">
             <option value="none" ${cmp === 'none' ? 'selected' : ''}>Nenhuma referência</option>
-            <option value="brasil" ${cmp === 'brasil' ? 'selected' : ''}>Brasil (rede pública)</option>
-            <option value="nordeste" ${cmp === 'nordeste' ? 'selected' : ''}>Nordeste (rede estadual)</option>
-            <option value="uf" ${cmp === 'uf' ? 'selected' : ''}>UF específica (rede estadual)</option>
+            <option value="brasil" ${cmp === 'brasil' ? 'selected' : ''}>Média Brasil</option>
+            <option value="nordeste" ${cmp === 'nordeste' ? 'selected' : ''}>Média Nordeste</option>
+            <option value="uf" ${cmp === 'uf' ? 'selected' : ''}>UF Específica</option>
           </select>
         </label>
         <label id="ideb-se-cmp-uf-wrap" style="font-size:11px;color:#555;display:${cmp === 'uf' ? 'flex' : 'none'};align-items:center;gap:6px">
@@ -542,7 +470,7 @@
             ${ufs.map(sg => `<option value="${sg}" ${sg === cmpUf ? 'selected' : ''}>${sg} — ${lookup[sg]}</option>`).join('')}
           </select>
         </label>
-        <span style="font-size:10px;color:#888">Overlays interestaduais usam série oficial estadual (exceto Brasil pública)</span>
+        <span style="font-size:10px;color:#888">Brasil = rede pública · Nordeste/UF = rede estadual (INEP)</span>
       </div>`;
   }
 
@@ -552,10 +480,9 @@
     const ufSel = document.getElementById('ideb-se-cmp-uf');
     if (!cmp) return;
     const apply = () => {
-      if (global.S) {
-        global.S.idebCmp = cmp.value;
-        if (ufSel) global.S.idebCmpUf = ufSel.value;
-      }
+      if (!global.S) global.S = {};
+      global.S.idebCmp = cmp.value;
+      if (ufSel) global.S.idebCmpUf = ufSel.value;
       if (ufWrap) ufWrap.style.display = cmp.value === 'uf' ? 'flex' : 'none';
       if (typeof global.refreshActiveTab === 'function') global.refreshActiveTab();
       else if (typeof global.renderIdeb === 'function') global.renderIdeb();
@@ -570,23 +497,29 @@
     if (cmp === 'none') return [];
     const refs = ideb.referencias || {};
     const porUf = ideb.por_uf_estadual || {};
+    const base = {
+      _isMeta: true, fill: false, borderWidth: 1.8, pointRadius: 2,
+      tension: 0.3, spanGaps: true, borderDash: [5, 4],
+    };
     const ds = [];
     if (cmp === 'brasil') {
       const data = chartLabels.map(a => refs.brasil_publica?.[a]?.[etapa] ?? null);
       if (data.some(v => v != null)) {
         ds.push({
-          label: `Brasil pública — ${ET_LABEL[etapa]}`,
-          data, _isMeta: true, borderColor: '#90A4AE', borderWidth: 1.5, borderDash: [4, 3],
-          pointRadius: 0, tension: 0.3, spanGaps: true,
+          ...base,
+          label: 'Média Brasil (pública)',
+          data, borderColor: '#607D8B', pointBackgroundColor: '#607D8B',
         });
       }
     } else if (cmp === 'nordeste') {
-      const data = chartLabels.map(a => refs.nordeste_estadual?.[a]?.[etapa] ?? null);
+      const data = chartLabels.map(a =>
+        refs.nordeste_estadual?.[a]?.[etapa] ?? refs.nordeste_publica?.[a]?.[etapa] ?? null
+      );
       if (data.some(v => v != null)) {
         ds.push({
-          label: `Nordeste estadual — ${ET_LABEL[etapa]}`,
-          data, _isMeta: true, borderColor: '#78909C', borderWidth: 1.6, borderDash: [5, 4],
-          pointRadius: 0, tension: 0.3, spanGaps: true,
+          ...base,
+          label: 'Média Nordeste (estadual)',
+          data, borderColor: '#78909C', pointBackgroundColor: '#78909C',
         });
       }
     } else if (cmp === 'uf') {
@@ -595,9 +528,9 @@
       const data = chartLabels.map(a => porUf?.[a]?.[sg]?.[etapa] ?? null);
       if (data.some(v => v != null)) {
         ds.push({
-          label: `${sg} estadual — ${ET_LABEL[etapa]}`,
-          data, _isMeta: true, borderColor: '#5C6BC0', borderWidth: 1.8, borderDash: [6, 4],
-          pointRadius: 2, pointBackgroundColor: '#5C6BC0', tension: 0.3, spanGaps: true,
+          ...base,
+          label: `${sg} — ${nome}`,
+          data, borderColor: '#5C6BC0', pointBackgroundColor: '#5C6BC0',
         });
       }
     }

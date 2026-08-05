@@ -79,6 +79,8 @@ const S = {
   redeSel: 'estadual',   // current network: estadual, municipal, federal, filantropica, privada, todas
   redeCache: {},         // { estadual: { acesso: data, infra: data }, ... }
 };
+// Expor para módulos satélite (ideb_se_rankings.js etc.) — overlays/filtros dependem disso
+window.S = S;
 
 // ── Hiperlinks de fonte/conceito (caderno conceitual e notas técnicas) ──
 const LINK_FONTE = 'color:inherit;text-decoration:underline dotted;text-underline-offset:2px';
@@ -4765,7 +4767,6 @@ function renderIdeb() {
     <div class="section-sticky">
       ${sectionBanner('img/icons/nav_ideb.png', SE_EM_ONLY ? 'IDEB Ensino Médio' : 'IDEB', geoLabel + (SE_ESTADUAL_ONLY ? ' · Rede Estadual' : ''))}
       ${redeToggleHTML()}
-      <div class="kpi-strip" id="ideb-kpis" style="grid-template-columns:repeat(${idebEtapas.length},1fr)"></div>
     </div>
 
     <!-- ═══ EIXO: Evolução ═══ -->
@@ -4846,8 +4847,8 @@ function renderIdeb() {
           <h3>Tabela de Municípios — IDEB EM ${mapAno}</h3>
           <input type="text" class="table-search" id="ideb-mun-search" placeholder="Buscar...">
         </div>
-        <div style="font-size:10px;color:var(--accent);padding:4px 12px 6px;font-weight:600;background:rgba(255,203,4,.08);border-radius:0 0 6px 6px;border-top:1px dashed rgba(255,203,4,.3)">
-          📍 Clique em qualquer município — na tabela ou no mapa — para filtrar <strong>todas as visualizações</strong> desta seção (KPIs, gráficos e recortes). Clique novamente para desfiltrar.
+        <div style="font-size:10px;color:#555;padding:4px 12px 6px;font-weight:600;background:rgba(29,113,185,.06);border-radius:0 0 6px 6px;border-top:1px dashed rgba(29,113,185,.25)">
+          Clique em qualquer município — na tabela ou no mapa — para filtrar as visualizações desta seção. Clique novamente para desfiltrar.
         </div>
         <div style="max-height:400px;overflow-y:auto">
           <table class="data-table" id="ideb-mun-table">
@@ -4870,31 +4871,6 @@ function renderIdeb() {
       </div>
     </div>
   `;
-
-  // ════════════════════════════════════════════════════════════════
-  //  BUILD KPIs
-  // ════════════════════════════════════════════════════════════════
-  const strip = document.getElementById('ideb-kpis');
-  if (strip) {
-    strip.innerHTML = kpis.map((k, i) => {
-      const cls = k.sub?.startsWith('+') ? 'up' : k.sub?.startsWith('-') ? 'down' : '';
-      return `
-      <div class="kpi-card accent-${k.accent}" style="animation-delay:${i * 80}ms">
-        <div class="kpi-top">
-          <span class="kpi-label">${k.label}</span>
-          <img class="kpi-icon" src="${k.icon}" alt="">
-        </div>
-        <div class="kpi-body">
-          <span class="kpi-value">${k.val ?? '—'}</span>
-          ${k.sparkline}
-        </div>
-        <div class="kpi-footer">
-          <span class="kpi-delta ${cls}">${k.sub || ''}</span>
-          <span class="kpi-abs">${anoSel}</span>
-        </div>
-      </div>`;
-    }).join('');
-  }
 
   // ════════════════════════════════════════════════════════════════
   //  CHART 1: Evolution with projected targets (full-width, 360px)
