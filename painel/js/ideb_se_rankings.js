@@ -193,17 +193,19 @@
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:600;color:#555">Recorte:</span>
-        <button type="button" class="rede-toggle-btn${mode === 'brasil' ? ' active' : ''}" id="ideb-uf-scope-brasil" data-scope="brasil">Brasil (27 UFs)</button>
-        <button type="button" class="rede-toggle-btn${mode === 'nordeste' ? ' active' : ''}" id="ideb-uf-scope-ne" data-scope="nordeste">Só Nordeste</button>
+        <div class="scope-toggle" role="group" aria-label="Recorte geográfico">
+          <button type="button" class="scope-toggle-btn${mode === 'brasil' ? ' active' : ''}" id="ideb-uf-scope-brasil" data-scope="brasil">Brasil (27 UFs)</button>
+          <button type="button" class="scope-toggle-btn${mode === 'nordeste' ? ' active' : ''}" id="ideb-uf-scope-ne" data-scope="nordeste">Só Nordeste</button>
+        </div>
         <span style="font-size:10px;color:#888;margin-left:4px">Sempre rede estadual oficial do INEP</span>
       </div>
       <div class="charts-grid" style="display:grid;grid-template-columns:${etapas.length === 3 ? '1fr 1fr 1fr' : '1fr'};gap:10px;margin-bottom:10px">
         ${etapas.map(buildUfTable).join('')}
       </div>
       <div class="chart-card" style="margin-bottom:10px">
-        <div class="chart-title">Posição de Sergipe ao longo do tempo (${mode === 'nordeste' ? 'Nordeste' : 'Brasil'})</div>
-        <div style="height:260px"><canvas id="chart-ideb-se-posicao"></canvas></div>
-        <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor)</div>
+        <div class="chart-title">Posição de Sergipe ao longo do tempo — Nordeste × Brasil</div>
+        <div style="height:280px"><canvas id="chart-ideb-se-posicao"></canvas></div>
+        <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor) · rede estadual</div>
       </div>`;
   }
 
@@ -212,29 +214,50 @@
     if (!el || typeof Chart === 'undefined') return;
     const serie = ideb?.rankings?.posicao_se_serie;
     if (!serie) return;
-    const mode = (global.S && global.S.idebUfScope) || 'nordeste';
-    const block = serie[mode] || serie.brasil;
-    const anosSet = new Set();
     const ets = ETAPAS_ATIVAS();
-    ets.forEach(et => (block[et] || []).forEach(p => anosSet.add(p.ano)));
+    const anosSet = new Set();
+    ['nordeste', 'brasil'].forEach(mode => {
+      const block = serie[mode];
+      if (!block) return;
+      ets.forEach(et => (block[et] || []).forEach(p => anosSet.add(p.ano)));
+    });
     const anos = [...anosSet].sort();
-    const datasets = ets.map(et => {
-      const map = Object.fromEntries((block[et] || []).map(p => [p.ano, p.posicao]));
-      return {
-        label: ET_LABEL[et],
-        data: anos.map(a => map[a] ?? null),
-        borderColor: ET_COLOR[et],
-        backgroundColor: ET_COLOR[et] + '22',
-        borderWidth: 2.2,
-        pointRadius: 4,
-        tension: 0.25,
-        spanGaps: true,
-      };
-    }).filter(ds => ds.data.some(v => v != null));
+
+    const seriesCfg = [
+      { mode: 'nordeste', label: 'Posição no Nordeste', color: '#1d71b9' },
+      { mode: 'brasil', label: 'Posição no Brasil', color: '#EE302F' },
+    ];
+
+    const datasets = [];
+    ets.forEach(et => {
+      seriesCfg.forEach(cfg => {
+        const block = serie[cfg.mode]?.[et] || [];
+        const map = Object.fromEntries(block.map(p => [p.ano, p.posicao]));
+        const data = anos.map(a => map[a] ?? null);
+        if (!data.some(v => v != null)) return;
+        const multiEt = ets.length > 1;
+        datasets.push({
+          label: multiEt ? `${cfg.label} — ${ET_LABEL[et]}` : cfg.label,
+          data,
+          borderColor: cfg.color,
+          backgroundColor: cfg.color + '22',
+          borderWidth: cfg.mode === 'brasil' ? 2 : 2.4,
+          borderDash: cfg.mode === 'brasil' ? [6, 4] : [],
+          pointRadius: 4,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: cfg.color,
+          pointBorderWidth: 2,
+          tension: 0.25,
+          spanGaps: true,
+        });
+      });
+    });
 
     const maxN = Math.max(
-      ...ets.flatMap(et => (block[et] || []).map(p => p.n || 0)),
-      9
+      9,
+      ...ets.flatMap(et => (serie.nordeste?.[et] || []).map(p => p.n || 0)),
+      ...ets.flatMap(et => (serie.brasil?.[et] || []).map(p => p.n || 0)),
+      ...datasets.flatMap(d => d.data.filter(v => v != null))
     );
 
     const chart = new Chart(el, {
@@ -243,6 +266,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: { top: 18 } },
         plugins: {
           legend: { display: true, position: 'bottom', labels: { font: { size: 11, weight: '600' }, boxWidth: 12 } },
           datalabels: {
@@ -250,6 +274,7 @@
             anchor: 'end',
             align: 'top',
             font: { size: 9, weight: '700' },
+            color: ctx => ctx.dataset.borderColor,
             formatter: v => (v != null ? v + 'º' : ''),
           },
         },
@@ -257,7 +282,7 @@
           y: {
             reverse: true,
             min: 1,
-            max: Math.min(maxN, mode === 'nordeste' ? 9 : 27),
+            max: Math.min(Math.ceil(maxN * 1.05), 27),
             ticks: { stepSize: 1, callback: v => v + 'º' },
             title: { display: true, text: 'Posição (1º = melhor)', font: { size: 10 } },
           },

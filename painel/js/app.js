@@ -465,20 +465,23 @@ function sectionBanner(icon, title, subtitle, opts = {}) {
   // Store flag for external use
   sectionBanner._lastShowToggle = opts.redeToggle !== false;
 
-  const LOGO_FGV = 'https://drive.google.com/thumbnail?id=1O7ZsdbitpS9FhVItlyqjCSJM4_DZAAhL&sz=w200';
-  const headerIcon = SE_MODE ? LOGO_FGV : icon;
+  const LOGO_FGV_SE = 'img/logo_fgv_se.png';
+  const headerIcon = SE_MODE ? LOGO_FGV_SE : icon;
   const hamburger = (SE_MODE || document.body.classList.contains('no-sidebar'))
     ? ''
     : `<button class="hamburger" onclick="document.getElementById('sidebar')?.classList.toggle('open'); document.getElementById('sidebar-overlay')?.classList.toggle('visible');">
           <span></span><span></span><span></span>
         </button>`;
+  const logoHtml = SE_MODE
+    ? `<img class="section-banner-logo-free" src="${headerIcon}" alt="FGV DGPE · Estado de Sergipe">`
+    : `<div class="section-banner-icon"><img src="${headerIcon}" alt=""></div>`;
 
   return `<div class="section-banner">
     <div class="section-banner-bg"></div>
     <div class="section-banner-content">
       <div class="section-banner-left">
         ${hamburger}
-        <div class="section-banner-icon section-banner-logo"><img src="${headerIcon}" alt="${SE_MODE ? 'FGV DGPE' : ''}"></div>
+        ${logoHtml}
         <h2>${title}<span id="rede-subtitle">${subtitle || ''}</span></h2>
         <span id="mun-filter-slot" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:12px"></span>
       </div>
@@ -497,7 +500,7 @@ function sectionBanner(icon, title, subtitle, opts = {}) {
           <div class="banner-filter-group">
             <label class="banner-filter-label">Município</label>
             <div class="searchable-select" id="mun-search-wrapper">
-              <input type="text" id="mun-search-input" class="banner-filter-select mun-search-input" placeholder="🔍 Pesquisar município..." autocomplete="off">
+              <input type="text" id="mun-search-input" class="banner-filter-select mun-search-input" placeholder="Pesquisar município..." autocomplete="off">
               <div class="mun-dropdown-list" id="mun-dropdown-list"></div>
             </div>
             <select id="sel-mun" class="banner-filter-select" style="display:none">
@@ -506,7 +509,7 @@ function sectionBanner(icon, title, subtitle, opts = {}) {
           </div>
         </div>
         <div style="font-size:9px;color:rgba(255,255,255,.6);text-align:right;font-weight:500;letter-spacing:.3px;padding-right:4px;">
-          💡 Dica: Ajuste o zoom do painel<br>(Ctrl - ou Ctrl +) para sua preferência
+          Dica: Ajuste o zoom do painel<br>(Ctrl - ou Ctrl +) para sua preferência
         </div>
       </div>
     </div>
@@ -4950,15 +4953,19 @@ function renderIdeb() {
   //  CHARTS 2-4: Decomposition N × P (3 separate cards, dual axis)
   // ════════════════════════════════════════════════════════════════
   if (isStateLevel) {
-    const decompIds = ['chart-decomp-ai', 'chart-decomp-af', 'chart-decomp-em'];
+    const decompIdByEtapa = { AI: 'chart-decomp-ai', AF: 'chart-decomp-af', EM: 'chart-decomp-em' };
     idebEtapas.forEach((et, etIdx) => {
-      const el = document.getElementById(decompIds[etIdx]);
+      const el = document.getElementById(decompIdByEtapa[et]);
       if (!el) return;
       const anosEt = anos.filter(a => ideb.serie_temporal[a]?.[et]?.nota_saeb != null);
       if (anosEt.length === 0) return;
 
       const dataN = anosEt.map(a => ideb.serie_temporal[a][et].nota_saeb);
-      const dataP = anosEt.map(a => +(ideb.serie_temporal[a][et].rendimento * 100).toFixed(1));
+      const dataP = anosEt.map(a => {
+        const r = ideb.serie_temporal[a][et].rendimento;
+        if (r == null) return null;
+        return +(r <= 1.5 ? r * 100 : r).toFixed(1);
+      });
 
       S.charts.push(new Chart(el, {
         type: 'bar',
