@@ -342,6 +342,41 @@ def build_rankings_municipios(resultado, ano):
     }
 
 
+def _annotate_empates(rows, pos_key="pos", ideb_key="ideb", uf_key="uf"):
+    """Marca empates por IDEB idêntico (desempate alfabético já aplicado na ordem)."""
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for i, r in enumerate(rows):
+        groups[r[ideb_key]].append(i)
+    for idxs in groups.values():
+        n = len(idxs)
+        posicoes = [rows[i][pos_key] for i in idxs]
+        pmin, pmax = min(posicoes), max(posicoes)
+        ufs = [rows[i][uf_key] for i in idxs]
+        for i in idxs:
+            rows[i]["empate_n"] = n
+            rows[i]["empate_com"] = n - 1
+            rows[i]["posicao_min"] = pmin
+            rows[i]["posicao_max"] = pmax
+            rows[i]["empatados"] = [u for u in ufs if u != rows[i][uf_key]]
+    return rows
+
+
+def _se_empate_resumo(rows, pos_key="pos"):
+    se = next((r for r in rows if r.get("is_se") or r.get("uf") == SG_UF), None)
+    if not se:
+        return None
+    return {
+        "pos": se[pos_key],
+        "posicao_min": se.get("posicao_min", se[pos_key]),
+        "posicao_max": se.get("posicao_max", se[pos_key]),
+        "empate_n": se.get("empate_n", 1),
+        "empate_com": se.get("empate_com", 0),
+        "empatados": se.get("empatados") or [],
+        "ideb": se.get("ideb"),
+    }
+
+
 def build_rankings_ufs(por_uf_estadual, ano):
     ufs_ano = por_uf_estadual.get(ano) or {}
     se_ideb = (ufs_ano.get(SG_UF) or {}).get(ETAPA)
@@ -357,26 +392,52 @@ def build_rankings_ufs(por_uf_estadual, ano):
     rows.sort(key=lambda r: (-r["ideb"], r["nome"]))
     for i, r in enumerate(rows, 1):
         r["pos"] = i
+    _annotate_empates(rows, pos_key="pos")
     ne_rows = []
     for r in rows:
         if r["is_ne"]:
             ne_rows.append(dict(r))
     for i, r in enumerate(ne_rows, 1):
         r["pos_ne"] = i
+    _annotate_empates(ne_rows, pos_key="pos_ne")
     se_row = next((r for r in rows if r["is_se"]), None)
     se_ne = next((r for r in ne_rows if r["is_se"]), None)
     bloco = {
         "n": len(rows), "se_ideb": se_ideb,
-        "se_pos": se_row["pos"] if se_row else None, "todos": rows,
+        "se_pos": se_row["pos"] if se_row else None,
+        "se_empate": _se_empate_resumo(rows, "pos"),
+        "todos": rows,
     }
     bloco_ne = {
         "n": len(ne_rows), "se_ideb": se_ideb,
-        "se_pos": se_ne["pos_ne"] if se_ne else None, "todos": ne_rows,
+        "se_pos": se_ne["pos_ne"] if se_ne else None,
+        "se_empate": _se_empate_resumo(ne_rows, "pos_ne"),
+        "todos": ne_rows,
     }
     return {
         "ano": int(ano), "rede": "Estadual",
         "etapas": {ETAPA: bloco},
         "nordeste": {"etapas": {ETAPA: bloco_ne}},
+    }
+
+
+def _empate_from_sorted_pairs(rows, sg_alvo):
+    """rows = [(sg, ideb), ...] já ordenados. Retorna dict de empate para sg_alvo."""
+    pos = next((i + 1 for i, (sg, _) in enumerate(rows) if sg == sg_alvo), None)
+    if pos is None:
+        return None
+    ideb = next(v for sg, v in rows if sg == sg_alvo)
+    grupo = [(i + 1, sg) for i, (sg, v) in enumerate(rows) if v == ideb]
+    ufs = [sg for _, sg in grupo]
+    return {
+        "posicao": pos,
+        "posicao_min": min(p for p, _ in grupo),
+        "posicao_max": max(p for p, _ in grupo),
+        "empate_n": len(grupo),
+        "empate_com": len(grupo) - 1,
+        "empatados": [sg for sg in ufs if sg != sg_alvo],
+        "n": len(rows),
+        "ideb": ideb,
     }
 
 
@@ -387,18 +448,14 @@ def build_posicao_se_serie(por_uf_estadual):
         ufs = por_uf_estadual[ano]
         rows = [(sg, ufs[sg][ETAPA]) for sg in ufs if ufs[sg].get(ETAPA) is not None]
         rows.sort(key=lambda x: (-x[1], x[0]))
-        pos = next((i + 1 for i, (sg, _) in enumerate(rows) if sg == SG_UF), None)
-        out["brasil"][ETAPA].append({
-            "ano": ano, "posicao": pos, "n": len(rows),
-            "ideb": (ufs.get(SG_UF) or {}).get(ETAPA),
-        })
+        info = _empate_from_sorted_pairs(rows, SG_UF)
+        if info:
+            out["brasil"][ETAPA].append({"ano": ano, **info})
         ne = [(sg, v) for sg, v in rows if sg in NE_UFS]
         ne.sort(key=lambda x: (-x[1], x[0]))
-        pos_ne = next((i + 1 for i, (sg, _) in enumerate(ne) if sg == SG_UF), None)
-        out["nordeste"][ETAPA].append({
-            "ano": ano, "posicao": pos_ne, "n": len(ne),
-            "ideb": (ufs.get(SG_UF) or {}).get(ETAPA),
-        })
+        info_ne = _empate_from_sorted_pairs(ne, SG_UF)
+        if info_ne:
+            out["nordeste"][ETAPA].append({"ano": ano, **info_ne})
     return out
 
 

@@ -152,6 +152,37 @@
     const scopeData = mode === 'nordeste' ? rk.nordeste : rk;
     const etapas = ETAPAS_ATIVAS().filter(et => (scopeData.etapas?.[et]?.todos || []).length);
 
+    const fmtEmpatePos = (r, posKey) => {
+      const pos = r[posKey] ?? r.pos;
+      if (!pos) return '—';
+      if ((r.empate_com || 0) > 0) {
+        const faixa = r.posicao_min != null && r.posicao_max != null && r.posicao_min !== r.posicao_max
+          ? `${r.posicao_min}º–${r.posicao_max}º`
+          : `${pos}º`;
+        return `${pos}º<span style="font-size:9px;font-weight:600;color:#b45309;margin-left:3px" title="Empate de IDEB · faixa ${faixa}">*</span>`;
+      }
+      return `${pos}º`;
+    };
+
+    const empateNote = (et) => {
+      const info = scopeData.etapas[et]?.se_empate;
+      if (!info || !(info.empate_com > 0)) {
+        return `<div style="font-size:10.5px;color:#555;padding:8px 12px;background:#f8fafc;border-top:1px solid #e8ecf1">
+          SE em <strong>${info?.pos ?? '—'}º</strong> · sem empate de IDEB com outras UFs · desempate do painel: ordem alfabética da sigla
+        </div>`;
+      }
+      const outros = (info.empatados || []).join(', ');
+      const faixa = info.posicao_min !== info.posicao_max
+        ? `faixa ${info.posicao_min}º–${info.posicao_max}º`
+        : `${info.pos}º`;
+      const qtd = info.empate_com === 1 ? '1 outra UF' : `${info.empate_com} outras UFs`;
+      return `<div style="font-size:10.5px;color:#334155;padding:8px 12px;background:#fff8eb;border-top:1px solid #fde68a;line-height:1.45">
+        <strong>Empate:</strong> SE em <strong>${info.pos}º</strong> com IDEB ${fmtNum(info.ideb)},
+        empatado com <strong>${qtd}</strong> (${outros}) · ${faixa}.
+        O painel desempatou por ordem alfabética da sigla (INEP não define ranking oficial com desempate).
+      </div>`;
+    };
+
     const buildUfTable = (et) => {
       const rows = scopeData.etapas[et]?.todos || [];
       const posKey = mode === 'nordeste' ? 'pos_ne' : 'pos';
@@ -159,7 +190,7 @@
         const pos = r[posKey] ?? r.pos;
         const bg = r.is_se ? 'background:rgba(26,54,93,.08);font-weight:700;' : '';
         return `<tr style="${bg}" data-pos="${pos ?? ''}" data-nome="${norm(r.nome)}" data-ideb="${r.ideb ?? ''}" data-delta="${r.is_se ? 0 : (r.delta_vs_se ?? '')}">
-          ${td(pos, 'center', 'font-weight:700;color:#1a365d')}
+          ${td(fmtEmpatePos(r, posKey), 'center', 'font-weight:700;color:#1a365d')}
           ${td(r.is_se ? `<strong>${r.uf} — ${r.nome}</strong>` : `${r.uf} — ${r.nome}`)}
           ${td(fmtNum(r.ideb), 'center', `font-weight:700;color:${idebColor(r.ideb)}`)}
           ${td(fmtDelta(r.is_se ? 0 : r.delta_vs_se), 'center')}
@@ -181,9 +212,35 @@
               <tbody>${body}</tbody>
             </table>
           </div>
-          <div class="chart-source" style="padding:8px 12px">Rede Estadual · INEP ${ano}</div>
+          ${empateNote(et)}
+          <div class="chart-source" style="padding:8px 12px">* Empate de IDEB · Rede Estadual · INEP ${ano}</div>
         </div>`;
     };
+
+    const serie = ideb?.rankings?.posicao_se_serie;
+    const empateSerieNote = (() => {
+      if (!serie) return '';
+      const pick = (mode, ano) => (serie[mode]?.EM || []).find(p => String(p.ano) === String(ano));
+      const fmt = (p, label) => {
+        if (!p) return '';
+        if (!(p.empate_com > 0)) return `<li><strong>${p.ano} (${label}):</strong> ${p.posicao}º · sem empate</li>`;
+        const qtd = p.empate_com === 1 ? '1 outra UF' : `${p.empate_com} outras UFs`;
+        const outros = (p.empatados || []).join(', ');
+        const faixa = p.posicao_min !== p.posicao_max ? `${p.posicao_min}º–${p.posicao_max}º` : `${p.posicao}º`;
+        return `<li><strong>${p.ano} (${label}):</strong> ${p.posicao}º com IDEB ${fmtNum(p.ideb)}, empatado com <strong>${qtd}</strong> (${outros}) · faixa ${faixa}</li>`;
+      };
+      return `
+        <div style="margin:0 0 10px;padding:10px 12px;background:#fff8eb;border:1px solid #fde68a;border-radius:8px;font-size:11px;color:#334155;line-height:1.45">
+          <div style="font-weight:700;color:#92400e;margin-bottom:4px">Atenção aos empates de IDEB</div>
+          <ul style="margin:0;padding-left:18px">
+            ${fmt(pick('brasil', '2023'), 'Brasil')}
+            ${fmt(pick('brasil', '2025'), 'Brasil')}
+            ${fmt(pick('nordeste', '2023'), 'Nordeste')}
+            ${fmt(pick('nordeste', '2025'), 'Nordeste')}
+          </ul>
+          <div style="margin-top:6px;font-size:10px;color:#64748b">A posição plotada usa desempate alfabético da sigla. UFs empatadas compartilham o mesmo IDEB.</div>
+        </div>`;
+    })();
 
     return `
       <div class="section-divider">
@@ -204,8 +261,9 @@
       </div>
       <div class="chart-card" style="margin-bottom:10px">
         <div class="chart-title">Posição de Sergipe ao longo do tempo — Nordeste × Brasil</div>
+        ${empateSerieNote}
         <div style="height:280px"><canvas id="chart-ideb-se-posicao"></canvas></div>
-        <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor) · rede estadual</div>
+        <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor) · rede estadual · * = ano com empate</div>
       </div>`;
   }
 
@@ -232,8 +290,8 @@
     ets.forEach(et => {
       seriesCfg.forEach(cfg => {
         const block = serie[cfg.mode]?.[et] || [];
-        const map = Object.fromEntries(block.map(p => [p.ano, p.posicao]));
-        const data = anos.map(a => map[a] ?? null);
+        const byAno = Object.fromEntries(block.map(p => [p.ano, p]));
+        const data = anos.map(a => byAno[a]?.posicao ?? null);
         if (!data.some(v => v != null)) return;
         const multiEt = ets.length > 1;
         datasets.push({
@@ -249,6 +307,7 @@
           pointBorderWidth: 2,
           tension: 0.25,
           spanGaps: true,
+          _metaByAno: byAno,
         });
       });
     });
@@ -269,13 +328,34 @@
         layout: { padding: { top: 18 } },
         plugins: {
           legend: { display: true, position: 'bottom', labels: { font: { size: 11, weight: '600' }, boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              label(ctx) {
+                const ano = ctx.label;
+                const meta = ctx.dataset._metaByAno?.[ano];
+                const pos = ctx.parsed.y;
+                if (!meta) return ` ${ctx.dataset.label}: ${pos}º`;
+                if (meta.empate_com > 0) {
+                  const qtd = meta.empate_com === 1 ? '1 outra UF' : `${meta.empate_com} outras UFs`;
+                  const outros = (meta.empatados || []).join(', ');
+                  return ` ${ctx.dataset.label}: ${pos}º (empatado com ${qtd}: ${outros}) · IDEB ${meta.ideb}`;
+                }
+                return ` ${ctx.dataset.label}: ${pos}º · IDEB ${meta.ideb} · sem empate`;
+              },
+            },
+          },
           datalabels: {
             display: true,
             anchor: 'end',
             align: 'top',
             font: { size: 9, weight: '700' },
             color: ctx => ctx.dataset.borderColor,
-            formatter: v => (v != null ? v + 'º' : ''),
+            formatter: (v, ctx) => {
+              if (v == null) return '';
+              const ano = ctx.chart.data.labels[ctx.dataIndex];
+              const meta = ctx.dataset._metaByAno?.[ano];
+              return meta?.empate_com > 0 ? `${v}º*` : `${v}º`;
+            },
           },
         },
         scales: {
