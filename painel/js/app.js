@@ -463,14 +463,20 @@ function sectionBanner(icon, title, subtitle, opts = {}) {
   // Store flag for external use
   sectionBanner._lastShowToggle = opts.redeToggle !== false;
 
+  const LOGO_FGV = 'https://drive.google.com/thumbnail?id=1O7ZsdbitpS9FhVItlyqjCSJM4_DZAAhL&sz=w200';
+  const headerIcon = SE_MODE ? LOGO_FGV : icon;
+  const hamburger = (SE_MODE || document.body.classList.contains('no-sidebar'))
+    ? ''
+    : `<button class="hamburger" onclick="document.getElementById('sidebar')?.classList.toggle('open'); document.getElementById('sidebar-overlay')?.classList.toggle('visible');">
+          <span></span><span></span><span></span>
+        </button>`;
+
   return `<div class="section-banner">
     <div class="section-banner-bg"></div>
     <div class="section-banner-content">
       <div class="section-banner-left">
-        <button class="hamburger" onclick="document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('visible');">
-          <span></span><span></span><span></span>
-        </button>
-        <div class="section-banner-icon"><img src="${icon}" alt=""></div>
+        ${hamburger}
+        <div class="section-banner-icon section-banner-logo"><img src="${headerIcon}" alt="${SE_MODE ? 'FGV DGPE' : ''}"></div>
         <h2>${title}<span id="rede-subtitle">${subtitle || ''}</span></h2>
         <span id="mun-filter-slot" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:12px"></span>
       </div>
@@ -4762,120 +4768,10 @@ function renderIdeb() {
       <div class="kpi-strip" id="ideb-kpis" style="grid-template-columns:repeat(${idebEtapas.length},1fr)"></div>
     </div>
 
-    <!-- ═══ BLOCO INFORMATIVO: O que é o IDEB? ═══ -->
-    <div class="section-divider">
-      <span class="section-divider-icon"><img src="img/icons/nav_ideb.png" alt=""></span>
-      <span class="section-divider-text">O que é o IDEB?</span>
-      <span class="section-divider-line"></span>
-    </div>
-
-    <div class="chart-card" style="padding:0;overflow:hidden;border:1px solid rgba(0,90,50,.08)">
-      <div style="display:grid;grid-template-columns:1fr 1fr">
-        <div style="padding:20px 24px;background:linear-gradient(135deg,#f8fdf9 0%,#eef6f0 100%)">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-            <img src="img/icons/nav_ideb.png" alt="" style="width:20px;height:20px">
-            <span style="font-size:14px;font-weight:700;color:var(--pri)">Definição</span>
-          </div>
-          <p style="font-size:11.5px;margin:0 0 16px;color:#333;line-height:1.75">
-            O <strong>IDEB (Índice de Desenvolvimento da Educação Básica)</strong> é o principal indicador
-            de qualidade da educação brasileira, calculado pelo INEP a cada 2 anos. Combina informações de
-            <strong>desempenho em provas padronizadas</strong> (SAEB) com <strong>fluxo escolar</strong> (aprovação).
-          </p>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <img src="img/icons/sec_saeb.png" alt="" style="width:20px;height:20px">
-            <span style="font-size:14px;font-weight:700;color:var(--pri)">Componentes</span>
-          </div>
-          <p style="font-size:11.5px;margin:0 0 8px;color:#333;line-height:1.75">
-            <strong>IDEB = N × P</strong>, onde:
-          </p>
-          <ul style="font-size:11px;margin:0 0 14px;padding-left:18px;color:#444;line-height:1.8">
-            <li><strong>N (Nota SAEB padronizada)</strong> — Média das proficiências em Língua Portuguesa e
-            Matemática do SAEB, padronizada na escala <strong>0 a 10</strong>.</li>
-            <li><strong>P (Indicador de Rendimento)</strong> — Taxa de aprovação média da etapa de ensino,
-            variando de <strong>0 a 1</strong>. Quanto maior a aprovação, maior o P.</li>
-          </ul>
-          ${exAI ? `
-          <div style="background:rgba(0,171,78,.08);border:1px solid rgba(0,171,78,.2);border-radius:6px;padding:10px 14px">
-            <p style="font-size:11px;margin:0 0 6px;color:#1B5E20;font-weight:700">Exemplo de Cálculo — Rede Estadual ${SE_MODE ? 'SE' : 'RS'} (${ultimo})</p>
-            <p style="font-size:10.5px;margin:0 0 4px;color:#333;line-height:1.7">
-              <strong>Anos Iniciais:</strong> N = ${exAI.nota_saeb?.toFixed(2)} · P = ${exAI.rendimento?.toFixed(3)}
-              → IDEB = ${exAI.nota_saeb?.toFixed(2)} × ${exAI.rendimento?.toFixed(3)} = <strong>${(exAI.nota_saeb * exAI.rendimento).toFixed(2)}</strong> ≈ ${exAI.ideb?.toFixed(1)}
-            </p>
-            ${exEM ? `<p style="font-size:10.5px;margin:0;color:#333;line-height:1.7">
-              <strong>Ens. Médio:</strong> N = ${exEM.nota_saeb?.toFixed(2)} · P = ${exEM.rendimento?.toFixed(3)}
-              → IDEB = ${exEM.nota_saeb?.toFixed(2)} × ${exEM.rendimento?.toFixed(3)} = <strong>${(exEM.nota_saeb * exEM.rendimento).toFixed(2)}</strong> ≈ ${exEM.ideb?.toFixed(1)}
-            </p>` : ''}
-          </div>` : ''}
-          <p style="font-size:10px;margin:10px 0 0;color:#888;line-height:1.6">
-            Até 2015, o SAEB era composto pela <em>ANEB</em> (amostral) e <em>Prova Brasil</em> (censitária, EF).
-            A partir de 2017 (<em>Portaria INEP nº 447/2017</em>), o SAEB tornou-se censitário também para o EM.
-          </p>
-          <p style="font-size:10px;margin:6px 0 0;color:#888;line-height:1.6">
-            <strong style="color:#666">Rede Privada:</strong> O IDEB do Ensino Fundamental (AI e AF) é calculado
-            exclusivamente para escolas <strong>públicas</strong>, pois a Prova Brasil/SAEB censitário abrange
-            apenas a rede pública no EF. Escolas privadas possuem IDEB somente para o
-            <strong>Ensino Médio</strong> (a partir de 2017).
-          </p>
-        </div>
-        <div style="padding:20px 24px;border-left:1px solid rgba(0,90,50,.06)">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-            <img src="img/icons/panorama.png" alt="" style="width:20px;height:20px">
-            <span style="font-size:14px;font-weight:700;color:var(--pri)">Escala e Referências</span>
-          </div>
-          <table style="width:100%;font-size:11px;border-collapse:separate;border-spacing:0">
-            <thead>
-              <tr>
-                <th style="padding:6px 8px;text-align:left;background:#f0f4f8;border-bottom:2px solid #ddd;font-weight:700;color:#333">Faixa</th>
-                <th style="padding:6px 8px;text-align:left;background:#f0f4f8;border-bottom:2px solid #ddd;font-weight:700;color:#333">Classificação</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td style="padding:5px 8px;border-bottom:1px solid #eee"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#1B5E20;vertical-align:middle;margin-right:6px"></span>≥ 7,0</td><td style="padding:5px 8px;border-bottom:1px solid #eee">Excelente</td></tr>
-              <tr style="background:#fafbfc"><td style="padding:5px 8px;border-bottom:1px solid #eee"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#43A047;vertical-align:middle;margin-right:6px"></span>6,0 – 6,9</td><td style="padding:5px 8px;border-bottom:1px solid #eee">Bom</td></tr>
-              <tr><td style="padding:5px 8px;border-bottom:1px solid #eee"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#FFCB04;vertical-align:middle;margin-right:6px"></span>5,0 – 5,9</td><td style="padding:5px 8px;border-bottom:1px solid #eee">Regular</td></tr>
-              <tr style="background:#fafbfc"><td style="padding:5px 8px;border-bottom:1px solid #eee"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#FB8C00;vertical-align:middle;margin-right:6px"></span>4,0 – 4,9</td><td style="padding:5px 8px;border-bottom:1px solid #eee">Alerta</td></tr>
-              <tr><td style="padding:5px 8px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#E53935;vertical-align:middle;margin-right:6px"></span>< 4,0</td><td style="padding:5px 8px">Crítico</td></tr>
-            </tbody>
-          </table>
-          <p style="font-size:9px;margin:8px 0 0;color:#999;line-height:1.5;font-style:italic">
-            * Classificação adotada para fins de visualização — não corresponde a faixas oficiais do INEP.
-          </p>
-          ${SE_MODE ? `
-          <div style="margin-top:14px;background:rgba(29,113,185,.06);border:1px solid rgba(29,113,185,.15);border-radius:6px;padding:10px 14px">
-            <p style="font-size:11px;margin:0 0 6px;color:#14507F;line-height:1.7">
-              <strong>Referências de comparação</strong>
-            </p>
-            <p style="font-size:10.5px;margin:0;color:#333;line-height:1.7">
-              Nos gráficos de evolução, as linhas tracejadas mostram o IDEB da
-              <strong>rede pública de Sergipe</strong> e do <strong>Brasil (rede pública)</strong>,
-              quando disponíveis na divulgação oficial do INEP.
-            </p>
-          </div>
-          <div style="margin-top:8px;background:rgba(255,203,4,.08);border:1px solid rgba(255,203,4,.18);border-radius:6px;padding:8px 14px">
-            <p style="font-size:10px;margin:0;color:#5D4037;line-height:1.7">
-              <strong>Metas do PNE:</strong> AI: <strong>6,0</strong> · AF: <strong>5,5</strong> · EM: <strong>5,2</strong><br>
-              Metas oficiais da SEED serão incluídas quando publicadas.
-            </p>
-          </div>
-          <p style="font-size:9px;margin:10px 0 0;color:#999;line-height:1.5;font-style:italic">
-            Fontes: INEP — Nota Técnica do IDEB; PNE — Lei nº 13.005/2014 (Meta 7).
-          </p>
-          ` : `
-          <div style="margin-top:14px;background:rgba(29,113,185,.06);border:1px solid rgba(29,113,185,.15);border-radius:6px;padding:10px 14px">
-            <p style="font-size:11px;margin:0 0 8px;color:#14507F;line-height:1.7">
-              <strong>Metas SEDUC-RS (próximas edições):</strong>
-            </p>
-            <p style="font-size:10px;margin:0;color:#666">Ver painel RS original.</p>
-          </div>
-          `}
-        </div>
-      </div>
-    </div>
-
     <!-- ═══ EIXO: Evolução ═══ -->
     <div class="section-divider">
       <span class="section-divider-icon"><img src="img/icons/sec_evolucao.png" alt=""></span>
-      <span class="section-divider-text">IDEB — Evolução por Etapa (${anos[0]}–${anos[anos.length-1]})</span>
+      <span class="section-divider-text">IDEB Ensino Médio — Evolução (${anos[0]}–${anos[anos.length-1]})</span>
       <span class="section-divider-line"></span>
     </div>
 
@@ -4941,9 +4837,7 @@ function renderIdeb() {
           </select>`}
         </div>
         <div style="font-size:9.5px;color:#888;padding:4px 0 2px;line-height:1.4;font-style:italic">
-          ${SE_EM_ONLY && mapAno !== anoSel
-            ? `Mapa/tabela municipal com dados de escolas ${mapAno} (INEP ainda não divulgou microdado municipal 2025). KPIs e UFs usam ${anoSel}.`
-            : 'Municípios sem escolas na etapa selecionada aparecem em cinza.'}
+          Municípios sem escolas estaduais de EM com IDEB no ano aparecem em cinza.
         </div>
         <div id="ideb-map-leaflet" style="height:370px;border-radius:8px"></div>
       </div>
@@ -15646,21 +15540,22 @@ async function init() {
   initNav();
   initInfoTooltips();
 
-  // SE: abrir direto no IDEB (sem home)
-  const defaultView = (SE_MODE) ? 'ideb' : 'home';
-  const deepView = getViewFromUrl() || defaultView;
-  if (deepView && deepView !== 'home') {
-    const tab = document.querySelector(`.sidebar-tab[data-view="${deepView}"]`);
-    if (tab) tab.click();
-    else if (SE_MODE) { S._currentView = 'ideb'; syncViewToUrl('ideb'); }
-    else renderHome();
-  } else if (SE_MODE) {
-    const tab = document.getElementById('tab-ideb');
-    if (tab) tab.click();
-    else { S._currentView = 'ideb'; syncViewToUrl('ideb'); }
+  // SE: abrir direto no IDEB (sem home / sem sidebar)
+  if (SE_MODE) {
+    S._currentView = 'ideb';
+    S.pendingView = 'ideb';
+    syncViewToUrl('ideb');
+    document.body.classList.add('se-em-panel', 'no-sidebar');
   } else {
-    renderHome();
-    syncViewToUrl('home');
+    const deepView = getViewFromUrl();
+    if (deepView && deepView !== 'home') {
+      const tab = document.querySelector(`.sidebar-tab[data-view="${deepView}"]`);
+      if (tab) tab.click();
+      else renderHome();
+    } else {
+      renderHome();
+      syncViewToUrl('home');
+    }
   }
 
   window.addEventListener('popstate', () => {
@@ -15772,6 +15667,9 @@ async function init() {
       S.pendingView = null;
       const tab = document.querySelector(`.sidebar-tab[data-view="${view}"]`);
       if (tab) tab.click();
+      else if (SE_MODE && view === 'ideb') renderIdeb();
+    } else if (SE_MODE && S._currentView === 'ideb') {
+      renderIdeb();
     }
   } catch (err) {
     document.getElementById('main-content').innerHTML = `

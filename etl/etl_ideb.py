@@ -33,7 +33,8 @@ UF_NOME_TO_SG = {
 UF_SG_TO_NOME = {v: k for k, v in UF_NOME_TO_SG.items()}
 
 EM_CFG = {
-    "file_esc": "divulgacao_ensino_medio_escolas_2023.xlsx",
+    "file_esc": "divulgacao_ensino_medio_escolas_2025.xlsx",
+    "file_esc_fallback": "divulgacao_ensino_medio_escolas_2023.xlsx",
     "label": "Ensino Médio",
     "anos_ideb": [2005, 2007, 2009, 2011, 2013, 2015, 2017, 2019, 2021, 2023, 2025],
     "anos_proj": [2019, 2021, 2023],
@@ -204,8 +205,11 @@ def build_referencias(oficial, macro_data, por_uf_estadual):
 
 
 def load_esc_em():
-    fpath = find_file(EM_CFG["file_esc"])
-    print(f"  Lendo escolas {EM_CFG['file_esc']}...", end=" ", flush=True)
+    try:
+        fpath = find_file(EM_CFG["file_esc"])
+    except FileNotFoundError:
+        fpath = find_file(EM_CFG["file_esc_fallback"])
+    print(f"  Lendo escolas {os.path.basename(fpath)}...", end=" ", flush=True)
     df = pd.read_excel(fpath, header=9)
     df = df[df["SG_UF"].astype(str).str.strip() == SG_UF].copy()
     print(f"{len(df)} escolas SE")

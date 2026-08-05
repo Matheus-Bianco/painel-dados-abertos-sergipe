@@ -389,7 +389,7 @@
             <tbody id="ideb-se-esc-tbody">${body}</tbody>
           </table>
         </div>
-        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP ${ano} (escolas EM) · Microdado municipal/escolar 2025 ainda não disponível — ranking usa ${ano}</div>
+        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP ${ano} — escolas da rede estadual (Ensino Médio)</div>
       </div>`;
   }
 
