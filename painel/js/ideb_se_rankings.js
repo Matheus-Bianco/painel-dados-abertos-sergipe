@@ -238,7 +238,7 @@
             ${fmt(pick('nordeste', '2023'), 'Nordeste')}
             ${fmt(pick('nordeste', '2025'), 'Nordeste')}
           </ul>
-          <div style="margin-top:6px;font-size:10px;color:#64748b">A posição plotada usa desempate alfabético da sigla. UFs empatadas compartilham o mesmo IDEB.</div>
+          <div style="margin-top:6px;font-size:10px;color:#64748b">No gráfico, anos com empate mostram uma barra vertical com a faixa de posições (ex.: 18º–22º); o ponto fica no meio da faixa.</div>
         </div>`;
     })();
 
@@ -262,10 +262,58 @@
       <div class="chart-card" style="margin-bottom:10px">
         <div class="chart-title">Posição de Sergipe ao longo do tempo — Nordeste × Brasil</div>
         ${empateSerieNote}
-        <div style="height:280px"><canvas id="chart-ideb-se-posicao"></canvas></div>
-        <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor) · rede estadual · * = ano com empate</div>
+        <div style="height:300px"><canvas id="chart-ideb-se-posicao"></canvas></div>
+        <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor) · barra vertical = faixa de empate</div>
       </div>`;
   }
+
+  /** Plugin: desenha faixa min–max nos anos com empate de IDEB. */
+  const posicaoEmpateRangePlugin = {
+    id: 'posicaoEmpateRange',
+    afterDatasetsDraw(chart) {
+      const yScale = chart.scales.y;
+      if (!yScale) return;
+      const { ctx } = chart;
+      chart.data.datasets.forEach((ds, dsIdx) => {
+        const meta = chart.getDatasetMeta(dsIdx);
+        if (!meta || meta.hidden || !meta.data) return;
+        const color = ds.borderColor || '#666';
+        const xOff = ds._rangeXOffset || 0;
+        for (let i = 0; i < chart.data.labels.length; i++) {
+          const ano = chart.data.labels[i];
+          const info = ds._metaByAno?.[ano];
+          const pt = meta.data[i];
+          if (!info || !(info.empate_com > 0) || !pt) continue;
+          const pMin = info.posicao_min ?? info.posicao;
+          const pMax = info.posicao_max ?? info.posicao;
+          if (pMin == null || pMax == null || pMin === pMax) continue;
+          const x = pt.x + xOff;
+          const y1 = yScale.getPixelForValue(pMin);
+          const y2 = yScale.getPixelForValue(pMax);
+          const top = Math.min(y1, y2);
+          const bot = Math.max(y1, y2);
+          ctx.save();
+          ctx.fillStyle = typeof color === 'string' && color.startsWith('#')
+            ? color + '22'
+            : 'rgba(100,100,100,.12)';
+          ctx.fillRect(x - 7, top, 14, bot - top);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x, top);
+          ctx.lineTo(x, bot);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x - 5, top);
+          ctx.lineTo(x + 5, top);
+          ctx.moveTo(x - 5, bot);
+          ctx.lineTo(x + 5, bot);
+          ctx.stroke();
+          ctx.restore();
+        }
+      });
+    },
+  };
 
   function paintPosicaoChart(ideb) {
     const el = document.getElementById('chart-ideb-se-posicao');
@@ -282,16 +330,24 @@
     const anos = [...anosSet].sort();
 
     const seriesCfg = [
-      { mode: 'nordeste', label: 'Posição no Nordeste', color: '#1d71b9' },
-      { mode: 'brasil', label: 'Posição no Brasil', color: '#EE302F' },
+      { mode: 'nordeste', label: 'Posição no Nordeste', color: '#1d71b9', xOff: -4 },
+      { mode: 'brasil', label: 'Posição no Brasil', color: '#EE302F', xOff: 4 },
     ];
+
+    const plotValue = (p) => {
+      if (!p || p.posicao == null) return null;
+      if (p.empate_com > 0 && p.posicao_min != null && p.posicao_max != null) {
+        return (p.posicao_min + p.posicao_max) / 2;
+      }
+      return p.posicao;
+    };
 
     const datasets = [];
     ets.forEach(et => {
       seriesCfg.forEach(cfg => {
         const block = serie[cfg.mode]?.[et] || [];
         const byAno = Object.fromEntries(block.map(p => [p.ano, p]));
-        const data = anos.map(a => byAno[a]?.posicao ?? null);
+        const data = anos.map(a => plotValue(byAno[a]));
         if (!data.some(v => v != null)) return;
         const multiEt = ets.length > 1;
         datasets.push({
@@ -301,31 +357,37 @@
           backgroundColor: cfg.color + '22',
           borderWidth: cfg.mode === 'brasil' ? 2 : 2.4,
           borderDash: cfg.mode === 'brasil' ? [6, 4] : [],
-          pointRadius: 4,
+          pointRadius: ctx => {
+            const ano = anos[ctx.dataIndex];
+            const info = byAno[ano];
+            return info?.empate_com > 0 ? 5 : 4;
+          },
           pointBackgroundColor: '#fff',
           pointBorderColor: cfg.color,
           pointBorderWidth: 2,
           tension: 0.25,
           spanGaps: true,
           _metaByAno: byAno,
+          _rangeXOffset: cfg.xOff,
         });
       });
     });
 
     const maxN = Math.max(
       9,
-      ...ets.flatMap(et => (serie.nordeste?.[et] || []).map(p => p.n || 0)),
-      ...ets.flatMap(et => (serie.brasil?.[et] || []).map(p => p.n || 0)),
+      ...ets.flatMap(et => (serie.nordeste?.[et] || []).map(p => p.n || p.posicao_max || 0)),
+      ...ets.flatMap(et => (serie.brasil?.[et] || []).map(p => p.n || p.posicao_max || 0)),
       ...datasets.flatMap(d => d.data.filter(v => v != null))
     );
 
     const chart = new Chart(el, {
       type: 'line',
       data: { labels: anos, datasets },
+      plugins: [posicaoEmpateRangePlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 18 } },
+        layout: { padding: { top: 22, right: 8 } },
         plugins: {
           legend: { display: true, position: 'bottom', labels: { font: { size: 11, weight: '600' }, boxWidth: 12 } },
           tooltip: {
@@ -333,14 +395,17 @@
               label(ctx) {
                 const ano = ctx.label;
                 const meta = ctx.dataset._metaByAno?.[ano];
-                const pos = ctx.parsed.y;
-                if (!meta) return ` ${ctx.dataset.label}: ${pos}º`;
+                if (!meta) return ` ${ctx.dataset.label}: ${ctx.parsed.y}º`;
                 if (meta.empate_com > 0) {
                   const qtd = meta.empate_com === 1 ? '1 outra UF' : `${meta.empate_com} outras UFs`;
                   const outros = (meta.empatados || []).join(', ');
-                  return ` ${ctx.dataset.label}: ${pos}º (empatado com ${qtd}: ${outros}) · IDEB ${meta.ideb}`;
+                  return [
+                    ` ${ctx.dataset.label}: faixa ${meta.posicao_min}º–${meta.posicao_max}º (empate)`,
+                    ` Empatado com ${qtd}: ${outros}`,
+                    ` IDEB ${meta.ideb} · desempate alfabético cairia em ${meta.posicao}º`,
+                  ];
                 }
-                return ` ${ctx.dataset.label}: ${pos}º · IDEB ${meta.ideb} · sem empate`;
+                return ` ${ctx.dataset.label}: ${meta.posicao}º · IDEB ${meta.ideb} · sem empate`;
               },
             },
           },
@@ -348,13 +413,18 @@
             display: true,
             anchor: 'end',
             align: 'top',
-            font: { size: 9, weight: '700' },
+            offset: 2,
+            clamp: true,
+            font: { size: 8.5, weight: '700' },
             color: ctx => ctx.dataset.borderColor,
-            formatter: (v, ctx) => {
-              if (v == null) return '';
+            formatter: (_v, ctx) => {
               const ano = ctx.chart.data.labels[ctx.dataIndex];
               const meta = ctx.dataset._metaByAno?.[ano];
-              return meta?.empate_com > 0 ? `${v}º*` : `${v}º`;
+              if (!meta || meta.posicao == null) return '';
+              if (meta.empate_com > 0 && meta.posicao_min !== meta.posicao_max) {
+                return `${meta.posicao_min}–${meta.posicao_max}º`;
+              }
+              return `${meta.posicao}º`;
             },
           },
         },
@@ -364,7 +434,7 @@
             min: 1,
             max: Math.min(Math.ceil(maxN * 1.05), 27),
             ticks: { stepSize: 1, callback: v => v + 'º' },
-            title: { display: true, text: 'Posição (1º = melhor)', font: { size: 10 } },
+            title: { display: true, text: 'Posição (1º = melhor) · faixa = empate', font: { size: 10 } },
           },
         },
       },
