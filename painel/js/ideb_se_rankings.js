@@ -218,27 +218,47 @@
     };
 
     const serie = ideb?.rankings?.posicao_se_serie;
-    const empateSerieNote = (() => {
+    const pickSerie = (mode, a) => (serie?.[mode]?.EM || []).find(p => String(p.ano) === String(a));
+    const ganhoBanner = (() => {
       if (!serie) return '';
-      const pick = (mode, ano) => (serie[mode]?.EM || []).find(p => String(p.ano) === String(ano));
-      const fmt = (p, label) => {
-        if (!p) return '';
-        if (!(p.empate_com > 0)) return `<li><strong>${p.ano} (${label}):</strong> ${p.posicao}º · sem empate</li>`;
-        const qtd = p.empate_com === 1 ? '1 outra UF' : `${p.empate_com} outras UFs`;
-        const outros = (p.empatados || []).join(', ');
-        const faixa = p.posicao_min !== p.posicao_max ? `${p.posicao_min}º–${p.posicao_max}º` : `${p.posicao}º`;
-        return `<li><strong>${p.ano} (${label}):</strong> ${p.posicao}º com IDEB ${fmtNum(p.ideb)}, empatado com <strong>${qtd}</strong> (${outros}) · faixa ${faixa}</li>`;
-      };
+      const br23 = pickSerie('brasil', '2023');
+      const br25 = pickSerie('brasil', '2025');
+      const ne23 = pickSerie('nordeste', '2023');
+      const ne25 = pickSerie('nordeste', '2025');
+      if (!br23 || !br25) return '';
+      const ganhoBr = br23.posicao - br25.posicao;
+      const ganhoNe = (ne23 && ne25) ? (ne23.posicao - ne25.posicao) : null;
+      const faixa = (p) => (p.empate_com > 0 && p.posicao_min !== p.posicao_max)
+        ? `${p.posicao_min}º–${p.posicao_max}º`
+        : `${p.posicao}º`;
+      const txtBr = ganhoBr > 0
+        ? `Ganho de ${ganhoBr} posições reais`
+        : (ganhoBr < 0 ? `Queda de ${Math.abs(ganhoBr)} posições` : 'Sem variação de posição');
+      const txtNe = ganhoNe == null ? '' : (ganhoNe > 0
+        ? `Ganho de ${ganhoNe} ${ganhoNe === 1 ? 'posição real' : 'posições reais'}`
+        : (ganhoNe < 0 ? `Queda de ${Math.abs(ganhoNe)}` : 'Estável'));
       return `
-        <div style="margin:0 0 10px;padding:10px 12px;background:#fff8eb;border:1px solid #fde68a;border-radius:8px;font-size:11px;color:#334155;line-height:1.45">
-          <div style="font-weight:700;color:#92400e;margin-bottom:4px">Atenção aos empates de IDEB</div>
-          <ul style="margin:0;padding-left:18px">
-            ${fmt(pick('brasil', '2023'), 'Brasil')}
-            ${fmt(pick('brasil', '2025'), 'Brasil')}
-            ${fmt(pick('nordeste', '2023'), 'Nordeste')}
-            ${fmt(pick('nordeste', '2025'), 'Nordeste')}
-          </ul>
-          <div style="margin-top:6px;font-size:10px;color:#64748b">No gráfico, anos com empate mostram uma barra vertical com a faixa de posições (ex.: 18º–22º); o ponto fica no meio da faixa.</div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin:0 0 10px">
+          <div style="padding:10px 12px;border-radius:8px;background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border:1px solid #86efac">
+            <div style="font-size:10px;font-weight:600;color:#166534;letter-spacing:.02em">BRASIL · 2023 → 2025</div>
+            <div style="font-size:1.15rem;font-weight:800;color:#14532d;margin-top:2px">${txtBr}</div>
+            <div style="font-size:10.5px;color:#334155;margin-top:3px">${br23.posicao}º → ${br25.posicao}º
+              <span style="color:#64748b"> · faixas ${faixa(br23)} → ${faixa(br25)}</span>
+            </div>
+          </div>
+          <div style="padding:10px 12px;border-radius:8px;background:linear-gradient(135deg,#eff6ff,#f8fafc);border:1px solid #93c5fd">
+            <div style="font-size:10px;font-weight:600;color:#1e40af;letter-spacing:.02em">NORDESTE · 2023 → 2025</div>
+            <div style="font-size:1.05rem;font-weight:800;color:#1e3a8a;margin-top:2px">${txtNe || '—'}</div>
+            <div style="font-size:10.5px;color:#334155;margin-top:3px">${ne23 && ne25 ? `${ne23.posicao}º → ${ne25.posicao}º` : ''}
+              ${ne23 && ne25 ? `<span style="color:#64748b"> · faixas ${faixa(ne23)} → ${faixa(ne25)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div style="margin:0 0 10px;padding:8px 12px;background:#fff8eb;border:1px solid #fde68a;border-radius:8px;font-size:10.5px;color:#334155;line-height:1.4">
+          <strong>Empates:</strong> rótulos com faixa (ex.: 18–22º) indicam UFs com o mesmo IDEB.
+          O ganho usa a posição após desempate alfabético da sigla
+          ${br23.empate_com ? ` · em 2023 SE empatou com <strong>${br23.empate_com} outras</strong> (${(br23.empatados || []).join(', ')})` : ''}
+          ${br25.empate_com ? ` · em 2025 com <strong>${br25.empate_com} outras</strong> (${(br25.empatados || []).join(', ')})` : ''}.
         </div>`;
     })();
 
@@ -261,59 +281,11 @@
       </div>
       <div class="chart-card" style="margin-bottom:10px">
         <div class="chart-title">Posição de Sergipe ao longo do tempo — Nordeste × Brasil</div>
-        ${empateSerieNote}
-        <div style="height:300px"><canvas id="chart-ideb-se-posicao"></canvas></div>
-        <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor) · barra vertical = faixa de empate</div>
+        ${ganhoBanner}
+        <div style="height:280px"><canvas id="chart-ideb-se-posicao"></canvas></div>
+        <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor) · rótulo em faixa = empate de IDEB</div>
       </div>`;
   }
-
-  /** Plugin: desenha faixa min–max nos anos com empate de IDEB. */
-  const posicaoEmpateRangePlugin = {
-    id: 'posicaoEmpateRange',
-    afterDatasetsDraw(chart) {
-      const yScale = chart.scales.y;
-      if (!yScale) return;
-      const { ctx } = chart;
-      chart.data.datasets.forEach((ds, dsIdx) => {
-        const meta = chart.getDatasetMeta(dsIdx);
-        if (!meta || meta.hidden || !meta.data) return;
-        const color = ds.borderColor || '#666';
-        const xOff = ds._rangeXOffset || 0;
-        for (let i = 0; i < chart.data.labels.length; i++) {
-          const ano = chart.data.labels[i];
-          const info = ds._metaByAno?.[ano];
-          const pt = meta.data[i];
-          if (!info || !(info.empate_com > 0) || !pt) continue;
-          const pMin = info.posicao_min ?? info.posicao;
-          const pMax = info.posicao_max ?? info.posicao;
-          if (pMin == null || pMax == null || pMin === pMax) continue;
-          const x = pt.x + xOff;
-          const y1 = yScale.getPixelForValue(pMin);
-          const y2 = yScale.getPixelForValue(pMax);
-          const top = Math.min(y1, y2);
-          const bot = Math.max(y1, y2);
-          ctx.save();
-          ctx.fillStyle = typeof color === 'string' && color.startsWith('#')
-            ? color + '22'
-            : 'rgba(100,100,100,.12)';
-          ctx.fillRect(x - 7, top, 14, bot - top);
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(x, top);
-          ctx.lineTo(x, bot);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(x - 5, top);
-          ctx.lineTo(x + 5, top);
-          ctx.moveTo(x - 5, bot);
-          ctx.lineTo(x + 5, bot);
-          ctx.stroke();
-          ctx.restore();
-        }
-      });
-    },
-  };
 
   function paintPosicaoChart(ideb) {
     const el = document.getElementById('chart-ideb-se-posicao');
@@ -330,24 +302,16 @@
     const anos = [...anosSet].sort();
 
     const seriesCfg = [
-      { mode: 'nordeste', label: 'Posição no Nordeste', color: '#1d71b9', xOff: -4 },
-      { mode: 'brasil', label: 'Posição no Brasil', color: '#EE302F', xOff: 4 },
+      { mode: 'nordeste', label: 'Posição no Nordeste', color: '#1d71b9' },
+      { mode: 'brasil', label: 'Posição no Brasil', color: '#EE302F' },
     ];
-
-    const plotValue = (p) => {
-      if (!p || p.posicao == null) return null;
-      if (p.empate_com > 0 && p.posicao_min != null && p.posicao_max != null) {
-        return (p.posicao_min + p.posicao_max) / 2;
-      }
-      return p.posicao;
-    };
 
     const datasets = [];
     ets.forEach(et => {
       seriesCfg.forEach(cfg => {
         const block = serie[cfg.mode]?.[et] || [];
         const byAno = Object.fromEntries(block.map(p => [p.ano, p]));
-        const data = anos.map(a => plotValue(byAno[a]));
+        const data = anos.map(a => byAno[a]?.posicao ?? null);
         if (!data.some(v => v != null)) return;
         const multiEt = ets.length > 1;
         datasets.push({
@@ -357,18 +321,13 @@
           backgroundColor: cfg.color + '22',
           borderWidth: cfg.mode === 'brasil' ? 2 : 2.4,
           borderDash: cfg.mode === 'brasil' ? [6, 4] : [],
-          pointRadius: ctx => {
-            const ano = anos[ctx.dataIndex];
-            const info = byAno[ano];
-            return info?.empate_com > 0 ? 5 : 4;
-          },
+          pointRadius: 4,
           pointBackgroundColor: '#fff',
           pointBorderColor: cfg.color,
           pointBorderWidth: 2,
           tension: 0.25,
           spanGaps: true,
           _metaByAno: byAno,
-          _rangeXOffset: cfg.xOff,
         });
       });
     });
@@ -380,14 +339,60 @@
       ...datasets.flatMap(d => d.data.filter(v => v != null))
     );
 
+    // Destaque visual do ganho 2023→2025 (Brasil) no canvas
+    const ganhoPlugin = {
+      id: 'ganhoPosicaoLabel',
+      afterDatasetsDraw(chart) {
+        const brDs = chart.data.datasets.find(d => (d.label || '').includes('Brasil'));
+        if (!brDs) return;
+        const dsIdx = chart.data.datasets.indexOf(brDs);
+        const meta = chart.getDatasetMeta(dsIdx);
+        const i23 = chart.data.labels.indexOf('2023');
+        const i25 = chart.data.labels.indexOf('2025');
+        if (i23 < 0 || i25 < 0 || !meta?.data?.[i23] || !meta?.data?.[i25]) return;
+        const p23 = brDs._metaByAno?.['2023'];
+        const p25 = brDs._metaByAno?.['2025'];
+        if (!p23 || !p25) return;
+        const ganho = p23.posicao - p25.posicao;
+        if (ganho <= 0) return;
+        const a = meta.data[i23];
+        const b = meta.data[i25];
+        const ctx = chart.ctx;
+        const mx = (a.x + b.x) / 2;
+        const my = Math.min(a.y, b.y) - 18;
+        const text = `Ganho de ${ganho} posições reais`;
+        ctx.save();
+        ctx.font = '700 11px Inter, system-ui, sans-serif';
+        const w = ctx.measureText(text).width + 16;
+        const h = 22;
+        const x = mx - w / 2;
+        const y = my - h / 2;
+        ctx.fillStyle = 'rgba(20, 83, 45, 0.92)';
+        ctx.beginPath();
+        const r = 6;
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, mx, y + h / 2);
+        ctx.restore();
+      },
+    };
+
     const chart = new Chart(el, {
       type: 'line',
       data: { labels: anos, datasets },
-      plugins: [posicaoEmpateRangePlugin],
+      plugins: [ganhoPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 22, right: 8 } },
+        layout: { padding: { top: 28, right: 8 } },
         plugins: {
           legend: { display: true, position: 'bottom', labels: { font: { size: 11, weight: '600' }, boxWidth: 12 } },
           tooltip: {
@@ -400,9 +405,8 @@
                   const qtd = meta.empate_com === 1 ? '1 outra UF' : `${meta.empate_com} outras UFs`;
                   const outros = (meta.empatados || []).join(', ');
                   return [
-                    ` ${ctx.dataset.label}: faixa ${meta.posicao_min}º–${meta.posicao_max}º (empate)`,
-                    ` Empatado com ${qtd}: ${outros}`,
-                    ` IDEB ${meta.ideb} · desempate alfabético cairia em ${meta.posicao}º`,
+                    ` ${ctx.dataset.label}: ${meta.posicao}º (faixa ${meta.posicao_min}º–${meta.posicao_max}º)`,
+                    ` Empatado com ${qtd}: ${outros} · IDEB ${meta.ideb}`,
                   ];
                 }
                 return ` ${ctx.dataset.label}: ${meta.posicao}º · IDEB ${meta.ideb} · sem empate`;
@@ -434,7 +438,7 @@
             min: 1,
             max: Math.min(Math.ceil(maxN * 1.05), 27),
             ticks: { stepSize: 1, callback: v => v + 'º' },
-            title: { display: true, text: 'Posição (1º = melhor) · faixa = empate', font: { size: 10 } },
+            title: { display: true, text: 'Posição (1º = melhor)', font: { size: 10 } },
           },
         },
       },
