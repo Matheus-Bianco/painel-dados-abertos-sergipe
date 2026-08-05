@@ -1,0 +1,1390 @@
+{
+  "municipios": {
+    "2800308": {
+      "dre": "DEA",
+      "nome_dre": "Diretoria de Ensino de Aracaju",
+      "nome_municipio": "Aracaju",
+      "cre": "DEA",
+      "nome_cre": "Diretoria de Ensino de Aracaju",
+      "cod_cre": "DEA"
+    },
+    "2800670": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Boquim",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2800407": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Arauá",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2807600": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Umbaúba",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2802106": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Estância",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2807501": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Tomar do Geru",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2803005": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Itabaianinha",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2802809": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Indiaroba",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2801702": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Cristinápolis",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2806305": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Santa Luzia do Itanhy",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2806206": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Salgado",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2805109": {
+      "dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "nome_municipio": "Pedrinhas",
+      "cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_cre": "DRE01"
+    },
+    "2803500": {
+      "dre": "DRE02",
+      "nome_dre": "DRE 02",
+      "nome_municipio": "Lagarto",
+      "cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_cre": "DRE02"
+    },
+    "2805505": {
+      "dre": "DRE02",
+      "nome_dre": "DRE 02",
+      "nome_municipio": "Poço Verde",
+      "cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_cre": "DRE02"
+    },
+    "2805802": {
+      "dre": "DRE02",
+      "nome_dre": "DRE 02",
+      "nome_municipio": "Riachão do Dantas",
+      "cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_cre": "DRE02"
+    },
+    "2807105": {
+      "dre": "DRE02",
+      "nome_dre": "DRE 02",
+      "nome_municipio": "Simão Dias",
+      "cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_cre": "DRE02"
+    },
+    "2807402": {
+      "dre": "DRE02",
+      "nome_dre": "DRE 02",
+      "nome_municipio": "Tobias Barreto",
+      "cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_cre": "DRE02"
+    },
+    "2802908": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Itabaiana",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2805208": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Pinhão",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2803708": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Macambira",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2801405": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Carira",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2804102": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Moita Bonita",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2801009": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Campo do Brito",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2802304": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Frei Paulo",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2800506": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Areia Branca",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2804458": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Nossa Senhora Aparecida",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2803906": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Malhador",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2805000": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Pedra Mole",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2806008": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "Ribeirópolis",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2806800": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "São Domingos",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2807006": {
+      "dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "nome_municipio": "São Miguel do Aleixo",
+      "cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_cre": "DRE03"
+    },
+    "2807204": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "Siriri",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2802502": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "General Maynard",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2803302": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "Japaratuba",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2801504": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "Carmópolis",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2805307": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "Pirambu",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2801306": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "Capela",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2802007": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "Divina Pastora",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2806107": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "Rosário do Catete",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2806503": {
+      "dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "nome_municipio": "Santa Rosa de Lima",
+      "cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_cre": "DRE04"
+    },
+    "2804607": {
+      "dre": "DRE05",
+      "nome_dre": "DRE 05",
+      "nome_municipio": "Nossa Senhora das Dores",
+      "cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_cre": "DRE05"
+    },
+    "2800209": {
+      "dre": "DRE05",
+      "nome_dre": "DRE 05",
+      "nome_municipio": "Aquidabã",
+      "cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_cre": "DRE05"
+    },
+    "2802601": {
+      "dre": "DRE05",
+      "nome_dre": "DRE 05",
+      "nome_municipio": "Gracho Cardoso",
+      "cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_cre": "DRE05"
+    },
+    "2803104": {
+      "dre": "DRE05",
+      "nome_dre": "DRE 05",
+      "nome_municipio": "Itabi",
+      "cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_cre": "DRE05"
+    },
+    "2802205": {
+      "dre": "DRE05",
+      "nome_dre": "DRE 05",
+      "nome_municipio": "Feira Nova",
+      "cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_cre": "DRE05"
+    },
+    "2801900": {
+      "dre": "DRE05",
+      "nome_dre": "DRE 05",
+      "nome_municipio": "Cumbe",
+      "cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_cre": "DRE05"
+    },
+    "2804409": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Neópolis",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2804904": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Pacatuba",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2806404": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Santana do São Francisco",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2804300": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Muribeca",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2807303": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Telha",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2800100": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Amparo do São Francisco",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2802700": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Ilha das Flores",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2805703": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Propriá",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2803807": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Malhada dos Bois",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2803401": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Japoatã",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2806909": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "São Francisco",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2800704": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Brejo Grande",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2801603": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Cedro de São João",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2801108": {
+      "dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "nome_municipio": "Canhoba",
+      "cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_cre": "DRE06"
+    },
+    "2804706": {
+      "dre": "DRE07",
+      "nome_dre": "DRE 07",
+      "nome_municipio": "Nossa Senhora de Lourdes",
+      "cre": "DRE07",
+      "nome_cre": "DRE 07",
+      "cod_cre": "DRE07"
+    },
+    "2805604": {
+      "dre": "DRE07",
+      "nome_dre": "DRE 07",
+      "nome_municipio": "Porto da Folha",
+      "cre": "DRE07",
+      "nome_cre": "DRE 07",
+      "cod_cre": "DRE07"
+    },
+    "2802403": {
+      "dre": "DRE07",
+      "nome_dre": "DRE 07",
+      "nome_municipio": "Gararu",
+      "cre": "DRE07",
+      "nome_cre": "DRE 07",
+      "cod_cre": "DRE07"
+    },
+    "2803609": {
+      "dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "nome_municipio": "Laranjeiras",
+      "cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_cre": "DRE08"
+    },
+    "2804805": {
+      "dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "nome_municipio": "Nossa Senhora do Socorro",
+      "cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_cre": "DRE08"
+    },
+    "2806701": {
+      "dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "nome_municipio": "São Cristóvão",
+      "cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_cre": "DRE08"
+    },
+    "2803203": {
+      "dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "nome_municipio": "Itaporanga d'Ajuda",
+      "cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_cre": "DRE08"
+    },
+    "2800605": {
+      "dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "nome_municipio": "Barra dos Coqueiros",
+      "cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_cre": "DRE08"
+    },
+    "2805901": {
+      "dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "nome_municipio": "Riachuelo",
+      "cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_cre": "DRE08"
+    },
+    "2806602": {
+      "dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "nome_municipio": "Santo Amaro das Brotas",
+      "cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_cre": "DRE08"
+    },
+    "2804003": {
+      "dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "nome_municipio": "Maruim",
+      "cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_cre": "DRE08"
+    },
+    "2801207": {
+      "dre": "DRE09",
+      "nome_dre": "DRE 09",
+      "nome_municipio": "Canindé de São Francisco",
+      "cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "cod_cre": "DRE09"
+    },
+    "2805406": {
+      "dre": "DRE09",
+      "nome_dre": "DRE 09",
+      "nome_municipio": "Poço Redondo",
+      "cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "cod_cre": "DRE09"
+    },
+    "2804508": {
+      "dre": "DRE09",
+      "nome_dre": "DRE 09",
+      "nome_municipio": "Nossa Senhora da Glória",
+      "cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "cod_cre": "DRE09"
+    },
+    "2804201": {
+      "dre": "DRE09",
+      "nome_dre": "DRE 09",
+      "nome_municipio": "Monte Alegre de Sergipe",
+      "cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "cod_cre": "DRE09"
+    }
+  },
+  "dre_list": [
+    {
+      "cod_dre": "DEA",
+      "nome_dre": "Diretoria de Ensino de Aracaju",
+      "cod_cre": "DEA",
+      "nome_cre": "Diretoria de Ensino de Aracaju",
+      "municipios": [
+        "2800308"
+      ],
+      "n_municipios": 1
+    },
+    {
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "municipios": [
+        "2800407",
+        "2800670",
+        "2801702",
+        "2802106",
+        "2802809",
+        "2803005",
+        "2805109",
+        "2806206",
+        "2806305",
+        "2807501",
+        "2807600"
+      ],
+      "n_municipios": 11
+    },
+    {
+      "cod_dre": "DRE02",
+      "nome_dre": "DRE 02",
+      "cod_cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "municipios": [
+        "2803500",
+        "2805505",
+        "2805802",
+        "2807105",
+        "2807402"
+      ],
+      "n_municipios": 5
+    },
+    {
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "municipios": [
+        "2800506",
+        "2801009",
+        "2801405",
+        "2802304",
+        "2802908",
+        "2803708",
+        "2803906",
+        "2804102",
+        "2804458",
+        "2805000",
+        "2805208",
+        "2806008",
+        "2806800",
+        "2807006"
+      ],
+      "n_municipios": 14
+    },
+    {
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "municipios": [
+        "2801306",
+        "2801504",
+        "2802007",
+        "2802502",
+        "2803302",
+        "2805307",
+        "2806107",
+        "2806503",
+        "2807204"
+      ],
+      "n_municipios": 9
+    },
+    {
+      "cod_dre": "DRE05",
+      "nome_dre": "DRE 05",
+      "cod_cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "municipios": [
+        "2800209",
+        "2801900",
+        "2802205",
+        "2802601",
+        "2803104",
+        "2804607"
+      ],
+      "n_municipios": 6
+    },
+    {
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "municipios": [
+        "2800100",
+        "2800704",
+        "2801108",
+        "2801603",
+        "2802700",
+        "2803401",
+        "2803807",
+        "2804300",
+        "2804409",
+        "2804904",
+        "2805703",
+        "2806404",
+        "2806909",
+        "2807303"
+      ],
+      "n_municipios": 14
+    },
+    {
+      "cod_dre": "DRE07",
+      "nome_dre": "DRE 07",
+      "cod_cre": "DRE07",
+      "nome_cre": "DRE 07",
+      "municipios": [
+        "2802403",
+        "2804706",
+        "2805604"
+      ],
+      "n_municipios": 3
+    },
+    {
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "municipios": [
+        "2800605",
+        "2803203",
+        "2803609",
+        "2804003",
+        "2804805",
+        "2805901",
+        "2806602",
+        "2806701"
+      ],
+      "n_municipios": 8
+    },
+    {
+      "cod_dre": "DRE09",
+      "nome_dre": "DRE 09",
+      "cod_cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "municipios": [
+        "2801207",
+        "2804201",
+        "2804508",
+        "2805406"
+      ],
+      "n_municipios": 4
+    }
+  ],
+  "cre_list": [
+    {
+      "cod_dre": "DEA",
+      "nome_dre": "Diretoria de Ensino de Aracaju",
+      "cod_cre": "DEA",
+      "nome_cre": "Diretoria de Ensino de Aracaju",
+      "municipios": [
+        "2800308"
+      ],
+      "n_municipios": 1
+    },
+    {
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01",
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "municipios": [
+        "2800407",
+        "2800670",
+        "2801702",
+        "2802106",
+        "2802809",
+        "2803005",
+        "2805109",
+        "2806206",
+        "2806305",
+        "2807501",
+        "2807600"
+      ],
+      "n_municipios": 11
+    },
+    {
+      "cod_dre": "DRE02",
+      "nome_dre": "DRE 02",
+      "cod_cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "municipios": [
+        "2803500",
+        "2805505",
+        "2805802",
+        "2807105",
+        "2807402"
+      ],
+      "n_municipios": 5
+    },
+    {
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03",
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "municipios": [
+        "2800506",
+        "2801009",
+        "2801405",
+        "2802304",
+        "2802908",
+        "2803708",
+        "2803906",
+        "2804102",
+        "2804458",
+        "2805000",
+        "2805208",
+        "2806008",
+        "2806800",
+        "2807006"
+      ],
+      "n_municipios": 14
+    },
+    {
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04",
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "municipios": [
+        "2801306",
+        "2801504",
+        "2802007",
+        "2802502",
+        "2803302",
+        "2805307",
+        "2806107",
+        "2806503",
+        "2807204"
+      ],
+      "n_municipios": 9
+    },
+    {
+      "cod_dre": "DRE05",
+      "nome_dre": "DRE 05",
+      "cod_cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "municipios": [
+        "2800209",
+        "2801900",
+        "2802205",
+        "2802601",
+        "2803104",
+        "2804607"
+      ],
+      "n_municipios": 6
+    },
+    {
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06",
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "municipios": [
+        "2800100",
+        "2800704",
+        "2801108",
+        "2801603",
+        "2802700",
+        "2803401",
+        "2803807",
+        "2804300",
+        "2804409",
+        "2804904",
+        "2805703",
+        "2806404",
+        "2806909",
+        "2807303"
+      ],
+      "n_municipios": 14
+    },
+    {
+      "cod_dre": "DRE07",
+      "nome_dre": "DRE 07",
+      "cod_cre": "DRE07",
+      "nome_cre": "DRE 07",
+      "municipios": [
+        "2802403",
+        "2804706",
+        "2805604"
+      ],
+      "n_municipios": 3
+    },
+    {
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08",
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "municipios": [
+        "2800605",
+        "2803203",
+        "2803609",
+        "2804003",
+        "2804805",
+        "2805901",
+        "2806602",
+        "2806701"
+      ],
+      "n_municipios": 8
+    },
+    {
+      "cod_dre": "DRE09",
+      "nome_dre": "DRE 09",
+      "cod_cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "municipios": [
+        "2801207",
+        "2804201",
+        "2804508",
+        "2805406"
+      ],
+      "n_municipios": 4
+    }
+  ],
+  "mun_to_cre": {
+    "2800308": {
+      "cod_cre": "DEA",
+      "nome_cre": "Diretoria de Ensino de Aracaju",
+      "cod_dre": "DEA",
+      "nome_dre": "Diretoria de Ensino de Aracaju"
+    },
+    "2800670": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2800407": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2807600": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2802106": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2807501": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2803005": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2802809": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2801702": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2806305": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2806206": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2805109": {
+      "cod_cre": "DRE01",
+      "nome_cre": "DRE 01",
+      "cod_dre": "DRE01",
+      "nome_dre": "DRE 01"
+    },
+    "2803500": {
+      "cod_cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_dre": "DRE02",
+      "nome_dre": "DRE 02"
+    },
+    "2805505": {
+      "cod_cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_dre": "DRE02",
+      "nome_dre": "DRE 02"
+    },
+    "2805802": {
+      "cod_cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_dre": "DRE02",
+      "nome_dre": "DRE 02"
+    },
+    "2807105": {
+      "cod_cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_dre": "DRE02",
+      "nome_dre": "DRE 02"
+    },
+    "2807402": {
+      "cod_cre": "DRE02",
+      "nome_cre": "DRE 02",
+      "cod_dre": "DRE02",
+      "nome_dre": "DRE 02"
+    },
+    "2802908": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2805208": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2803708": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2801405": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2804102": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2801009": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2802304": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2800506": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2804458": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2803906": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2805000": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2806008": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2806800": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2807006": {
+      "cod_cre": "DRE03",
+      "nome_cre": "DRE 03",
+      "cod_dre": "DRE03",
+      "nome_dre": "DRE 03"
+    },
+    "2807204": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2802502": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2803302": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2801504": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2805307": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2801306": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2802007": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2806107": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2806503": {
+      "cod_cre": "DRE04",
+      "nome_cre": "DRE 04",
+      "cod_dre": "DRE04",
+      "nome_dre": "DRE 04"
+    },
+    "2804607": {
+      "cod_cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_dre": "DRE05",
+      "nome_dre": "DRE 05"
+    },
+    "2800209": {
+      "cod_cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_dre": "DRE05",
+      "nome_dre": "DRE 05"
+    },
+    "2802601": {
+      "cod_cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_dre": "DRE05",
+      "nome_dre": "DRE 05"
+    },
+    "2803104": {
+      "cod_cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_dre": "DRE05",
+      "nome_dre": "DRE 05"
+    },
+    "2802205": {
+      "cod_cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_dre": "DRE05",
+      "nome_dre": "DRE 05"
+    },
+    "2801900": {
+      "cod_cre": "DRE05",
+      "nome_cre": "DRE 05",
+      "cod_dre": "DRE05",
+      "nome_dre": "DRE 05"
+    },
+    "2804409": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2804904": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2806404": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2804300": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2807303": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2800100": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2802700": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2805703": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2803807": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2803401": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2806909": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2800704": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2801603": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2801108": {
+      "cod_cre": "DRE06",
+      "nome_cre": "DRE 06",
+      "cod_dre": "DRE06",
+      "nome_dre": "DRE 06"
+    },
+    "2804706": {
+      "cod_cre": "DRE07",
+      "nome_cre": "DRE 07",
+      "cod_dre": "DRE07",
+      "nome_dre": "DRE 07"
+    },
+    "2805604": {
+      "cod_cre": "DRE07",
+      "nome_cre": "DRE 07",
+      "cod_dre": "DRE07",
+      "nome_dre": "DRE 07"
+    },
+    "2802403": {
+      "cod_cre": "DRE07",
+      "nome_cre": "DRE 07",
+      "cod_dre": "DRE07",
+      "nome_dre": "DRE 07"
+    },
+    "2803609": {
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08"
+    },
+    "2804805": {
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08"
+    },
+    "2806701": {
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08"
+    },
+    "2803203": {
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08"
+    },
+    "2800605": {
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08"
+    },
+    "2805901": {
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08"
+    },
+    "2806602": {
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08"
+    },
+    "2804003": {
+      "cod_cre": "DRE08",
+      "nome_cre": "DRE 08",
+      "cod_dre": "DRE08",
+      "nome_dre": "DRE 08"
+    },
+    "2801207": {
+      "cod_cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "cod_dre": "DRE09",
+      "nome_dre": "DRE 09"
+    },
+    "2805406": {
+      "cod_cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "cod_dre": "DRE09",
+      "nome_dre": "DRE 09"
+    },
+    "2804508": {
+      "cod_cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "cod_dre": "DRE09",
+      "nome_dre": "DRE 09"
+    },
+    "2804201": {
+      "cod_cre": "DRE09",
+      "nome_cre": "DRE 09",
+      "cod_dre": "DRE09",
+      "nome_dre": "DRE 09"
+    }
+  }
+}

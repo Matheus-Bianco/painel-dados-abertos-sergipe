@@ -1,0 +1,27 @@
+# Bases brutas INEP (grandes)
+00. Bases de Dados/
+*.xlsx
+*.xls
+!~/painel/**
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Scripts one-shot locais
+etl/_patch_*.py
+etl/_fix_*.py
+
+# Credenciais
+**/service_account.json
+**/credentials.json
+client_secret*.json
