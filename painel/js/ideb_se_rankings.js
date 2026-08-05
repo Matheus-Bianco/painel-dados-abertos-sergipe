@@ -358,15 +358,28 @@
         const a = meta.data[i23];
         const b = meta.data[i25];
         const ctx = chart.ctx;
-        const mx = (a.x + b.x) / 2;
-        const my = Math.min(a.y, b.y) - 18;
+        const area = chart.chartArea || {};
+        // Centro do segmento 2023→2025 (não colado no ponto de 2025)
+        let mx = a.x + (b.x - a.x) * 0.42;
+        let my = (a.y + b.y) / 2 - 10;
         const text = `Ganho de ${ganho} posições reais`;
         ctx.save();
         ctx.font = '700 11px Inter, system-ui, sans-serif';
         const w = ctx.measureText(text).width + 16;
         const h = 22;
-        const x = mx - w / 2;
-        const y = my - h / 2;
+        // Mantém a tag longe dos rótulos 2023/2025 e dentro da área do gráfico
+        const pad = 4;
+        let x = mx - w / 2;
+        let y = my - h / 2;
+        if (area.left != null) {
+          x = Math.max(area.left + pad, Math.min(x, area.right - w - pad));
+          y = Math.max(area.top + pad, Math.min(y, area.bottom - h - pad));
+          // Se ainda encostar no ponto de 2025, empurra para a esquerda/cima
+          if (x + w > b.x - 8) x = Math.max(area.left + pad, b.x - w - 12);
+          if (Math.abs(y + h / 2 - b.y) < 20) y = Math.min(y, b.y - h - 16);
+          y = Math.max(area.top + pad, y);
+        }
+        mx = x + w / 2;
         ctx.fillStyle = 'rgba(20, 83, 45, 0.92)';
         ctx.beginPath();
         const r = 6;
