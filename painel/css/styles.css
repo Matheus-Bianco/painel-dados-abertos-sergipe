@@ -2621,22 +2621,23 @@ body.se-em-panel .section-banner-bg {
 body.se-em-panel .section-banner {
   background: linear-gradient(135deg, #0d3b66 0%, #14507f 45%, #1d71b9 100%);
 }
-/* Logo FGV+SE solta no header (sem caixa) — invertida p/ fundo escuro */
+/* Logo FGV+SE solta no header (PNG branco com fundo transparente) */
 body.se-em-panel .section-banner-logo-free {
-  height: 52px;
+  height: 44px;
   width: auto;
-  max-width: min(340px, 42vw);
+  max-width: min(280px, 38vw);
   object-fit: contain;
   display: block;
   flex-shrink: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  filter: brightness(0) invert(1);
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  filter: none;
 }
 body.se-em-panel .section-banner-left h2 {
-  margin-left: 4px;
+  margin-left: 10px;
 }
 /* Toggle de recorte UF em fundo claro (contraste legível) */
 .scope-toggle {
