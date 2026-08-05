@@ -1,6 +1,6 @@
 # Painel de Dados Abertos — Educação Sergipe (SEED)
 
-Painel estático (HTML/CSS/JS) com GitHub Pages. MVP: aba **IDEB** completa (multi-rede, UF/DRE/município). Template base: painel estadual UNESCO/RS.
+Painel estático (HTML/CSS/JS) com GitHub Pages. MVP: aba **IDEB** completa (multi-rede, UF/DRE/município, rankings e comparativo interestadual). Template base: painel estadual UNESCO/RS + UX de rankings do Joinville.
 
 ## Estrutura
 
@@ -15,8 +15,10 @@ Painel estático (HTML/CSS/JS) com GitHub Pages. MVP: aba **IDEB** completa (mul
 ├── 00. Bases de Dados/02. IDEB/   # xlsx INEP (opcional; fallback no paths.py)
 └── painel/                        # site publicado
     ├── index.html
-    ├── css/ styles.css
-    ├── js/ app.js                 # SE_MODE = true
+    ├── css/styles.css
+    ├── js/
+    │   ├── app.js                 # SE_MODE = true
+    │   └── ideb_se_rankings.js    # rankings mun/UF/escolas + overlays
     ├── img/
     └── dados/
 ```
@@ -29,10 +31,25 @@ Painel estático (HTML/CSS/JS) com GitHub Pages. MVP: aba **IDEB** completa (mul
 - Alvo org: `gasefgv/painel-dados-abertos-sergipe` (transferir quando houver permissão de criar repo na org)
 - Pages: artifact = pasta `painel/` (workflow em push na `main`)
 
+## Schema IDEB (`4_7_ideb_*.json`)
+
+Além de `serie_temporal`, `por_municipio`, `lookup_municipios`:
+
+| Campo | Conteúdo |
+|-------|----------|
+| `por_uf_estadual[ano][SG][AI\|AF\|EM]` | IDEB oficial rede **Estadual** de todas as UFs |
+| `lookup_ufs` | SG → nome |
+| `ufs_ne` | `["AL","BA",…]` |
+| `referencias` | `se_publica`, `brasil_publica`, `nordeste_publica`, `nordeste_estadual` |
+| `rankings.municipios` | top/todos por etapa + `delta_vs_se` |
+| `rankings.ufs_estadual` | ranking BR + subset `nordeste` + `delta_vs_se` |
+| `rankings.posicao_se_serie` | posição de SE no tempo (BR/NE) |
+| `rankings.escolas.lista` | escolas SE com AI/AF/EM, mun, DRE |
+
 ## Como atualizar o IDEB
 
-1. Baixar planilhas oficiais INEP (IDEB 2023) e colocar em `00. Bases de Dados/02. IDEB/` **ou** manter o caminho de fallback em `etl/paths.py` (pasta Joinville/UNESCO com os xlsx nacionais).
-   - `divulgacao_regioes_ufs_ideb_2023.xlsx` (série UF)
+1. Baixar planilhas oficiais INEP (IDEB 2023) e colocar em `00. Bases de Dados/02. IDEB/` **ou** manter o fallback em `etl/paths.py`.
+   - `divulgacao_regioes_ufs_ideb_2023.xlsx`
    - planilhas de municípios/escolas AI, AF e EM 2023
 2. Gerar JSONs:
    ```bash
@@ -42,21 +59,18 @@ Painel estático (HTML/CSS/JS) com GitHub Pages. MVP: aba **IDEB** completa (mul
    ```bash
    python etl/gerar_geo_dre.py
    ```
-   Requer `service_account.json` (Joinville) para ler a aba Escolas da Formativa, e `geopandas` para dissolve das DREs.
 4. Commit + push na `main` → Actions publica o Pages.
 
 ## Modo SE no frontend
 
-Em `painel/js/app.js`:
-
-- `SE_MODE = true` e objeto `SE` (UF, DRE, arquivos geo/lookup)
-- Boot carrega só IDEB + `se_municipios.geojson` + `se_dres.geojson` + `se_dre_lookup.json`
-- Labels CRE→DRE; metas SEDUC-RS ocultas; referências SE/Brasil pública no gráfico
-- Demais abas do template UNESCO ficam ocultas na sidebar (código preservado)
+- `SE_MODE = true` + objeto `SE` em `app.js`
+- Boot: IDEB + `se_municipios.geojson` + `se_dres.geojson` + `se_dre_lookup.json`
+- Aba IDEB: KPIs → conceito → evolução (comparar Brasil/NE/UF) → rankings municípios → comparativo UFs → ranking escolas → decomposição N×P → mapa/tabela
+- Labels CRE→DRE; metas SEDUC-RS ocultas
 
 ## Cache-bust
 
-`index.html` referencia `css/styles.css?v=1` e `js/app.js?v=1`. Incrementar `?v=` ao publicar mudanças de CSS/JS.
+`index.html` usa `?v=2` em CSS/JS. Incrementar ao publicar mudanças de front.
 
 ## Contato / contexto FGV
 

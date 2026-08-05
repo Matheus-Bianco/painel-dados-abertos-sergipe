@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 ETL IDEB — Painel de Dados Abertos de Sergipe (SEED/SE)
-Série UF oficial (Regiões/UFs) + por_municipio (planilhas municípios/escolas).
+Série UF oficial + por_municipio + por_uf_estadual + rankings (mun/UF/escolas).
 """
 import sys, io, os, re, json, time, shutil
+from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paths import PAINEL_DIR, IDEB_DIR  # noqa: E402
@@ -15,6 +16,23 @@ import numpy as np
 
 SG_UF = "SE"
 UF_NOME = "Sergipe"
+
+NE_UFS = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"]
+NE_NOMES = {
+    "Alagoas", "Bahia", "Ceará", "Maranhão", "Paraíba",
+    "Pernambuco", "Piauí", "Rio Grande do Norte", "Sergipe",
+}
+# Nome planilha → SG
+UF_NOME_TO_SG = {
+    "Acre": "AC", "Alagoas": "AL", "Amapá": "AP", "Amazonas": "AM", "Bahia": "BA",
+    "Ceará": "CE", "Distrito Federal": "DF", "Espírito Santo": "ES", "Goiás": "GO",
+    "Maranhão": "MA", "Mato Grosso": "MT", "Mato Grosso do Sul": "MS", "Minas Gerais": "MG",
+    "Pará": "PA", "Paraíba": "PB", "Paraná": "PR", "Pernambuco": "PE", "Piauí": "PI",
+    "Rio de Janeiro": "RJ", "Rio Grande do Norte": "RN", "Rio Grande do Sul": "RS",
+    "Rondônia": "RO", "Roraima": "RR", "Santa Catarina": "SC", "São Paulo": "SP",
+    "Sergipe": "SE", "Tocantins": "TO",
+}
+UF_SG_TO_NOME = {v: k for k, v in UF_NOME_TO_SG.items()}
 
 ETAPAS = {
     "AI": {
@@ -54,8 +72,8 @@ REDE_OFICIAL_MAP = {
     "estadual": "Estadual",
     "privada": "Privada",
     "todas": "Total",
-    # "municipal" e "federal" não constam no agregado UF — ficam com média escolar
 }
+MACRO = {"Norte", "Nordeste", "Sudeste", "Sul", "Centro-Oeste"}
 
 
 def safe_numeric(val):
@@ -75,83 +93,135 @@ def find_file(name):
     raise FileNotFoundError(f"{name} nao encontrado em {IDEB_DIR}")
 
 
-def carregar_oficial_uf():
-    """oficial[rede_rotulo][etapa][ano] = {ideb, nota_saeb?, rendimento?}"""
+def load_dre_lookup():
+    path = os.path.join(PAINEL_DIR, "se_dre_lookup.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    return data.get("municipios") or {}
+
+
+def parse_uf_sheet_obs(raw):
+    """Retorna (obs_cols, data_rows) — obs_cols[ano]=idx, data a partir da linha 10."""
+    codes = [str(c) for c in raw.iloc[9].tolist()]
+    obs_cols = {}
+    extra = {}
+    for i, c in enumerate(codes):
+        m = re.match(r"VL_(OBSERVADO|NOTA_MEDIA|INDICADOR_REND)_(\d{4})", c)
+        if m:
+            kind, ano = m.group(1), m.group(2)
+            if kind == "OBSERVADO":
+                obs_cols[ano] = i
+            else:
+                extra.setdefault(ano, {})[kind] = i
+    return obs_cols, extra, raw.iloc[10:]
+
+
+def carregar_oficial_todas_ufs():
+    """
+    oficial[rede_rotulo][sg_uf][etapa][ano] = {ideb, nota_saeb?, rendimento?}
+    Também guarda linhas de macrorregião em oficial['_macro'][nome][rede][etapa][ano]
+    """
     fpath = find_file(UF_OFICIAL_NAME)
     oficial = {}
+    macro_data = {}
     for etapa, sheet in UF_SHEETS.items():
         raw = pd.read_excel(fpath, sheet_name=sheet, header=None)
-        codes = [str(c) for c in raw.iloc[9].tolist()]
-        col = {}
-        for i, c in enumerate(codes):
-            m = re.match(r"VL_(OBSERVADO|NOTA_MEDIA|INDICADOR_REND)_(\d{4})", c)
-            if m:
-                col.setdefault(m.group(2), {})[m.group(1)] = i
-        data = raw.iloc[10:]
-        se = data[data[0].astype(str).str.strip() == UF_NOME]
-        for _, row in se.iterrows():
+        obs_cols, extra, data = parse_uf_sheet_obs(raw)
+        for _, row in data.iterrows():
+            nome = str(row[0]).strip()
             rede_rotulo = str(row[1]).strip().split(" ")[0]
-            dest = oficial.setdefault(rede_rotulo, {}).setdefault(etapa, {})
-            for ano, idx in col.items():
-                ideb = safe_numeric(row[idx["OBSERVADO"]]) if "OBSERVADO" in idx else None
+            if nome in MACRO:
+                dest = macro_data.setdefault(nome, {}).setdefault(rede_rotulo, {}).setdefault(etapa, {})
+                for ano, idx in obs_cols.items():
+                    v = safe_numeric(row[idx])
+                    if v is not None:
+                        dest[ano] = round(v, 2)
+                continue
+            sg = UF_NOME_TO_SG.get(nome)
+            if not sg:
+                continue
+            dest = oficial.setdefault(rede_rotulo, {}).setdefault(sg, {}).setdefault(etapa, {})
+            for ano, idx in obs_cols.items():
+                ideb = safe_numeric(row[idx])
                 if ideb is None:
                     continue
                 entry = {"ideb": round(ideb, 2)}
-                if "NOTA_MEDIA" in idx:
-                    n = safe_numeric(row[idx["NOTA_MEDIA"]])
-                    if n is not None:
-                        entry["nota_saeb"] = round(n, 2)
-                if "INDICADOR_REND" in idx:
-                    p = safe_numeric(row[idx["INDICADOR_REND"]])
-                    if p is not None:
-                        entry["rendimento"] = round(p, 4)
+                if ano in extra:
+                    if "NOTA_MEDIA" in extra[ano]:
+                        n = safe_numeric(row[extra[ano]["NOTA_MEDIA"]])
+                        if n is not None:
+                            entry["nota_saeb"] = round(n, 2)
+                    if "INDICADOR_REND" in extra[ano]:
+                        p = safe_numeric(row[extra[ano]["INDICADOR_REND"]])
+                        if p is not None:
+                            entry["rendimento"] = round(p, 4)
                 dest[ano] = entry
-    return oficial
+    return oficial, macro_data
 
 
-def carregar_refs_publica(oficial):
-    """Referências SE pública + Brasil (~média 5 macrorregiões) a partir da planilha UF."""
-    fpath = find_file(UF_OFICIAL_NAME)
-    refs = {"se_publica": {}, "brasil_publica": {}}
-    # SE Pública do oficial carregado
-    if "Pública" in oficial or "Publica" in oficial:
-        key = "Pública" if "Pública" in oficial else "Publica"
-        for etapa, por_ano in oficial[key].items():
+def build_por_uf_estadual(oficial):
+    """por_uf_estadual[ano][SG][AI|AF|EM] = ideb (number) — rede Estadual."""
+    out = {}
+    est = oficial.get("Estadual") or {}
+    for sg, etapas in est.items():
+        for et, por_ano in etapas.items():
+            for ano, entry in por_ano.items():
+                out.setdefault(ano, {}).setdefault(sg, {})[et] = entry.get("ideb")
+    return out
+
+
+def build_referencias(oficial, macro_data, por_uf_estadual):
+    refs = {
+        "se_publica": {},
+        "brasil_publica": {},
+        "nordeste_publica": {},
+        "nordeste_estadual": {},
+    }
+    # SE Pública
+    pub_key = "Pública" if "Pública" in oficial else ("Publica" if "Publica" in oficial else None)
+    if pub_key:
+        se = oficial[pub_key].get(SG_UF, {})
+        for et, por_ano in se.items():
             for ano, o in por_ano.items():
-                refs["se_publica"].setdefault(ano, {})[etapa] = o.get("ideb")
+                refs["se_publica"].setdefault(ano, {})[et] = o.get("ideb")
 
-    # Brasil: média das 5 macrorregiões (planilha não tem linha Brasil)
-    macro = {"Norte", "Nordeste", "Sudeste", "Sul", "Centro-Oeste"}
-    for etapa, sheet in UF_SHEETS.items():
-        raw = pd.read_excel(fpath, sheet_name=sheet, header=None)
-        codes = [str(c) for c in raw.iloc[9].tolist()]
-        obs_cols = {}
-        for i, c in enumerate(codes):
-            m = re.match(r"VL_OBSERVADO_(\d{4})", c)
-            if m:
-                obs_cols[m.group(1)] = i
-        data = raw.iloc[10:]
-        for ano, idx in obs_cols.items():
+    # Brasil pública = média 5 macrorregiões (prefer Pública)
+    for et in ("AI", "AF", "EM"):
+        anos = set()
+        for mnome in MACRO:
+            for rede in ("Pública", "Publica", "Total"):
+                anos |= set((macro_data.get(mnome, {}).get(rede, {}).get(et) or {}).keys())
+        for ano in anos:
             vals = []
-            for _, row in data.iterrows():
-                nome = str(row[0]).strip()
-                rede = str(row[1]).strip().split(" ")[0]
-                if nome in macro and rede in ("Pública", "Publica", "Total"):
-                    # Prefer Pública; fallback Total
-                    if rede.startswith("P"):
-                        v = safe_numeric(row[idx])
-                        if v is not None:
-                            vals.append(v)
-            if not vals:
-                for _, row in data.iterrows():
-                    nome = str(row[0]).strip()
-                    rede = str(row[1]).strip().split(" ")[0]
-                    if nome in macro and rede == "Total":
-                        v = safe_numeric(row[idx])
-                        if v is not None:
-                            vals.append(v)
+            for mnome in MACRO:
+                v = (macro_data.get(mnome, {}).get("Pública") or macro_data.get(mnome, {}).get("Publica") or {}).get(et, {}).get(ano)
+                if v is None:
+                    v = macro_data.get(mnome, {}).get("Total", {}).get(et, {}).get(ano)
+                if v is not None:
+                    vals.append(v)
             if vals:
-                refs["brasil_publica"].setdefault(ano, {})[etapa] = round(float(np.mean(vals)), 2)
+                refs["brasil_publica"].setdefault(ano, {})[et] = round(float(np.mean(vals)), 2)
+
+    # Nordeste pública (linha macrorregião)
+    for rede in ("Pública", "Publica", "Total"):
+        ne = macro_data.get("Nordeste", {}).get(rede, {})
+        if not ne:
+            continue
+        for et, por_ano in ne.items():
+            for ano, v in por_ano.items():
+                refs["nordeste_publica"].setdefault(ano, {})[et] = v
+        if "Pública" in rede or "Publica" in rede:
+            break
+
+    # Nordeste estadual = média simples das 9 UFs NE (rede estadual)
+    for ano, ufs in por_uf_estadual.items():
+        for et in ("AI", "AF", "EM"):
+            vals = [ufs[sg][et] for sg in NE_UFS if sg in ufs and ufs[sg].get(et) is not None]
+            if vals:
+                refs["nordeste_estadual"].setdefault(ano, {})[et] = round(float(np.mean(vals)), 2)
+
     return refs
 
 
@@ -185,20 +255,19 @@ def load_mun_file(etapa_key):
 
 def extract_etapa_escolas(df, etapa_key, rede_filter=None):
     cfg = ETAPAS[etapa_key]
-    if rede_filter:
-        df = df[df["REDE"].isin(rede_filter)].copy()
+    work = df if not rede_filter else df[df["REDE"].isin(rede_filter)].copy()
     serie = {}
     for ano in cfg["anos_ideb"]:
         obs_col = f"VL_OBSERVADO_{ano}"
         nota_col = f"VL_NOTA_MEDIA_{ano}"
         rend_col = f"VL_INDICADOR_REND_{ano}"
         proj_col = f"VL_PROJECAO_{ano}" if ano in cfg["anos_proj"] else None
-        if obs_col not in df.columns:
+        if obs_col not in work.columns:
             continue
-        vals_obs = df[obs_col].apply(safe_numeric)
-        vals_nota = df[nota_col].apply(safe_numeric) if nota_col in df.columns else pd.Series(dtype=float, index=df.index)
-        vals_rend = df[rend_col].apply(safe_numeric) if rend_col in df.columns else pd.Series(dtype=float, index=df.index)
-        vals_proj = df[proj_col].apply(safe_numeric) if proj_col and proj_col in df.columns else pd.Series(dtype=float, index=df.index)
+        vals_obs = work[obs_col].apply(safe_numeric)
+        vals_nota = work[nota_col].apply(safe_numeric) if nota_col in work.columns else pd.Series(dtype=float, index=work.index)
+        vals_rend = work[rend_col].apply(safe_numeric) if rend_col in work.columns else pd.Series(dtype=float, index=work.index)
+        vals_proj = work[proj_col].apply(safe_numeric) if proj_col and proj_col in work.columns else pd.Series(dtype=float, index=work.index)
         valid_idx = vals_obs.dropna().index
         n_escolas = len(valid_idx)
         if n_escolas == 0:
@@ -217,7 +286,6 @@ def extract_etapa_escolas(df, etapa_key, rede_filter=None):
 
 
 def extract_mun_all_years_from_mun(df, etapa_key, rede_filter=None):
-    """por_municipio a partir da planilha oficial de municípios."""
     cfg = ETAPAS[etapa_key]
     if df is None:
         return {}, {}
@@ -278,27 +346,63 @@ def extract_mun_all_years_from_esc(df, etapa_key, rede_filter=None):
     return por_ano, lookup
 
 
-def build_rankings_se(resultado, ano="2023"):
-    """Ranking de municípios SE no ano (AI/AF/EM)."""
+def build_escolas_se(raw_esc, rede_filter, dre_lookup, ano="2023"):
+    """Lista de escolas SE com IDEB AI/AF/EM no ano."""
+    by_id = {}
+    for et, df in raw_esc.items():
+        work = df if not rede_filter else df[df["REDE"].isin(rede_filter)].copy()
+        obs_col = f"VL_OBSERVADO_{ano}"
+        if obs_col not in work.columns:
+            continue
+        for _, row in work.iterrows():
+            ideb = safe_numeric(row[obs_col])
+            if ideb is None:
+                continue
+            eid = str(int(float(row["ID_ESCOLA"]))) if pd.notna(row["ID_ESCOLA"]) else None
+            if not eid:
+                continue
+            cod_mun = str(int(float(row["CO_MUNICIPIO"])))[:7] if pd.notna(row["CO_MUNICIPIO"]) else None
+            mun_info = dre_lookup.get(cod_mun) or {}
+            dest = by_id.setdefault(eid, {
+                "cod_escola": eid,
+                "nome": str(row["NO_ESCOLA"]),
+                "cod_mun": cod_mun,
+                "nome_mun": str(row["NO_MUNICIPIO"]) if pd.notna(row["NO_MUNICIPIO"]) else "",
+                "rede": str(row["REDE"]).strip() if pd.notna(row["REDE"]) else "",
+                "dre": mun_info.get("dre") or mun_info.get("cod_dre"),
+                "nome_dre": mun_info.get("nome_dre") or mun_info.get("nome_cre"),
+            })
+            dest[et] = round(ideb, 2)
+    escolas = list(by_id.values())
+    escolas.sort(key=lambda e: (-(e.get("AI") or e.get("AF") or e.get("EM") or 0), e["nome"]))
+    return escolas
+
+
+def build_rankings_municipios(resultado, ano="2023"):
     mun_ano = resultado.get("por_municipio", {}).get(ano, {})
     lookup = resultado.get("lookup_municipios", {})
+    se_serie = resultado.get("serie_temporal", {}).get(ano, {})
     out = {"ano": int(ano), "etapas": {}}
     for et in ("AI", "AF", "EM"):
+        se_ideb = (se_serie.get(et) or {}).get("ideb")
         rows = []
         for cod, vals in mun_ano.items():
             d = vals.get(et)
             if d and d.get("ideb") is not None:
+                delta = round(d["ideb"] - se_ideb, 2) if se_ideb is not None else None
                 rows.append({
                     "cod": cod,
                     "nome": lookup.get(cod, cod),
                     "ideb": d["ideb"],
                     "n_escolas": d.get("n_escolas"),
+                    "delta_vs_se": delta,
                 })
         rows.sort(key=lambda r: (-r["ideb"], r["nome"]))
         for i, r in enumerate(rows, 1):
             r["pos"] = i
         out["etapas"][et] = {
             "n": len(rows),
+            "se_ideb": se_ideb,
             "top15": rows[:15],
             "bottom10": list(reversed(rows[-10:])) if len(rows) >= 10 else list(reversed(rows)),
             "todos": rows,
@@ -306,23 +410,103 @@ def build_rankings_se(resultado, ano="2023"):
     return out
 
 
+def build_rankings_ufs(por_uf_estadual, ano="2023"):
+    """Ranking UFs rede estadual + subset Nordeste, Δ vs SE."""
+    ufs_ano = por_uf_estadual.get(ano) or {}
+    se_vals = ufs_ano.get(SG_UF) or {}
+    out = {"ano": int(ano), "rede": "Estadual", "etapas": {}, "nordeste": {"etapas": {}}}
+    for et in ("AI", "AF", "EM"):
+        se_ideb = se_vals.get(et)
+        rows = []
+        for sg, vals in ufs_ano.items():
+            if vals.get(et) is None:
+                continue
+            delta = round(vals[et] - se_ideb, 2) if se_ideb is not None else None
+            rows.append({
+                "uf": sg,
+                "nome": UF_SG_TO_NOME.get(sg, sg),
+                "ideb": vals[et],
+                "delta_vs_se": delta,
+                "is_se": sg == SG_UF,
+                "is_ne": sg in NE_UFS,
+            })
+        rows.sort(key=lambda r: (-r["ideb"], r["nome"]))
+        for i, r in enumerate(rows, 1):
+            r["pos"] = i
+        ne_rows = [r for r in rows if r["is_ne"]]
+        for i, r in enumerate(ne_rows, 1):
+            r = dict(r)
+            r["pos_ne"] = i
+            ne_rows[i - 1] = r
+        se_row = next((r for r in rows if r["is_se"]), None)
+        se_ne = next((r for r in ne_rows if r["is_se"]), None)
+        out["etapas"][et] = {
+            "n": len(rows),
+            "se_ideb": se_ideb,
+            "se_pos": se_row["pos"] if se_row else None,
+            "todos": rows,
+        }
+        out["nordeste"]["etapas"][et] = {
+            "n": len(ne_rows),
+            "se_ideb": se_ideb,
+            "se_pos": se_ne["pos_ne"] if se_ne else None,
+            "todos": ne_rows,
+        }
+    return out
+
+
+def build_posicao_se_serie(por_uf_estadual):
+    """Série temporal da posição de SE no ranking BR e NE (rede estadual)."""
+    anos = sorted(por_uf_estadual.keys())
+    out = {"brasil": {}, "nordeste": {}}
+    for et in ("AI", "AF", "EM"):
+        out["brasil"][et] = []
+        out["nordeste"][et] = []
+        for ano in anos:
+            ufs = por_uf_estadual[ano]
+            rows = [(sg, ufs[sg][et]) for sg in ufs if ufs[sg].get(et) is not None]
+            rows.sort(key=lambda x: (-x[1], x[0]))
+            pos = next((i + 1 for i, (sg, _) in enumerate(rows) if sg == SG_UF), None)
+            out["brasil"][et].append({
+                "ano": ano, "posicao": pos, "n": len(rows),
+                "ideb": (ufs.get(SG_UF) or {}).get(et),
+            })
+            ne = [(sg, v) for sg, v in rows if sg in NE_UFS]
+            ne.sort(key=lambda x: (-x[1], x[0]))
+            pos_ne = next((i + 1 for i, (sg, _) in enumerate(ne) if sg == SG_UF), None)
+            out["nordeste"][et].append({
+                "ano": ano, "posicao": pos_ne, "n": len(ne),
+                "ideb": (ufs.get(SG_UF) or {}).get(et),
+            })
+    return out
+
+
 def main():
     t0 = time.time()
     print("=" * 60)
-    print("ETL IDEB — MULTI-REDE SERGIPE (SE)")
+    print("ETL IDEB — MULTI-REDE SERGIPE (SE) + UFs/ESCOLAS")
     print("=" * 60)
     print(f"IDEB_DIR: {IDEB_DIR}")
+
+    dre_lookup = load_dre_lookup()
+    print(f"  DRE lookup: {len(dre_lookup)} municipios")
 
     raw_esc, raw_mun = {}, {}
     for etapa_key in ETAPAS:
         raw_esc[etapa_key] = load_esc_file(etapa_key)
         raw_mun[etapa_key] = load_mun_file(etapa_key)
 
-    print("\n  Carregando valores oficiais agregados (Regioes/UFs)...")
-    OFICIAL = carregar_oficial_uf()
-    if OFICIAL:
-        print(f"  Redes oficiais SE: {sorted(OFICIAL.keys())}")
-    REFS = carregar_refs_publica(OFICIAL)
+    print("\n  Carregando valores oficiais (todas UFs + macros)...")
+    OFICIAL, MACRO_DATA = carregar_oficial_todas_ufs()
+    por_uf_estadual = build_por_uf_estadual(OFICIAL)
+    REFS = build_referencias(OFICIAL, MACRO_DATA, por_uf_estadual)
+    ufs_rank_base = build_rankings_ufs(por_uf_estadual, "2023")
+    pos_serie = build_posicao_se_serie(por_uf_estadual)
+    print(f"  por_uf_estadual anos: {sorted(por_uf_estadual.keys())}")
+    print(f"  UFs 2023 AI: {ufs_rank_base['etapas']['AI']['n']} · SE pos {ufs_rank_base['etapas']['AI']['se_pos']}")
+
+    # Lookup UFs para o front
+    lookup_ufs = {sg: nome for nome, sg in UF_NOME_TO_SG.items()}
 
     for rede_key, rede_filter in REDES.items():
         print(f"\n{'=' * 60}\n  REDE: {rede_key.upper()}\n{'=' * 60}")
@@ -335,13 +519,17 @@ def main():
                 "formula": "IDEB = N (Nota SAEB padronizada) × P (Indicador de Rendimento)",
                 "nota_metodologica": (
                     "serie_temporal usa valores oficiais UF/rede do INEP quando disponíveis. "
-                    "por_municipio usa planilha oficial de municípios (AI/AF) ou média escolar (EM)."
+                    "por_municipio usa planilha oficial de municípios (AI/AF) ou média escolar (EM). "
+                    "por_uf_estadual e rankings.ufs_estadual usam sempre rede Estadual oficial."
                 ),
             },
             "serie_temporal": {},
             "por_municipio": {},
+            "por_uf_estadual": por_uf_estadual,
             "lookup_municipios": {},
+            "lookup_ufs": lookup_ufs,
             "referencias": REFS,
+            "ufs_ne": NE_UFS,
         }
         all_lookup = {}
 
@@ -367,10 +555,12 @@ def main():
                 d = serie[anos_disp[-1]]
                 print(f"  {etapa_key}: IDEB {anos_disp[-1]} = {d['ideb']} ({d.get('n_escolas')} esc) [pre-override]")
 
+        # Override SE série com oficial UF da rede
         rotulo = REDE_OFICIAL_MAP.get(rede_key)
-        if rotulo and rotulo in OFICIAL:
+        se_oficial = (OFICIAL.get(rotulo) or {}).get(SG_UF) if rotulo else None
+        if se_oficial:
             n_over = 0
-            for etapa_key, por_ano in OFICIAL[rotulo].items():
+            for etapa_key, por_ano in se_oficial.items():
                 for ano, o in por_ano.items():
                     entry = resultado["serie_temporal"].setdefault(ano, {}).setdefault(etapa_key, {})
                     entry["ideb"] = o["ideb"]
@@ -391,7 +581,20 @@ def main():
             print(f"  [SEM OVERRIDE] rede '{rede_key}'")
 
         resultado["lookup_municipios"] = all_lookup
-        resultado["rankings"] = build_rankings_se(resultado, "2023")
+        escolas = build_escolas_se(raw_esc, rede_filter, dre_lookup, "2023")
+        print(f"  Escolas com IDEB 2023: {len(escolas)}")
+
+        resultado["rankings"] = {
+            "ano": 2023,
+            "municipios": build_rankings_municipios(resultado, "2023"),
+            "ufs_estadual": ufs_rank_base,
+            "posicao_se_serie": pos_serie,
+            "escolas": {
+                "ano": 2023,
+                "n": len(escolas),
+                "lista": escolas,
+            },
+        }
 
         out_json = os.path.join(PAINEL_DIR, f"4_7_ideb_{rede_key}.json")
         with open(out_json, "w", encoding="utf-8") as f:

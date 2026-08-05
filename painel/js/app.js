@@ -4869,6 +4869,7 @@ function renderIdeb() {
       <span class="section-divider-line"></span>
     </div>
 
+    ${SE_MODE && typeof IdebSE !== 'undefined' ? IdebSE.buildEvoControlsHTML(ideb) : ''}
     <div class="charts-grid" style="display:grid;grid-template-columns:1fr;gap:10px">
       <div class="chart-card">
         <div class="chart-title">${SE_MODE ? `IDEB Observado × Referências — ${geoLabel}` : `IDEB Observado × Meta SEDUC-RS — ${geoLabel}`}</div>
@@ -4876,6 +4877,8 @@ function renderIdeb() {
         <div class="chart-source">${FONTE_IDEB}</div>
       </div>
     </div>
+
+    ${SE_MODE && typeof IdebSE !== 'undefined' ? IdebSE.buildBlocksHTML(ideb, anoSel, S.creSel, S.munSel) : ''}
 
     ${isStateLevel ? `
     <!-- ═══ EIXO: Decomposição N × P ═══ -->
@@ -5000,27 +5003,13 @@ function renderIdeb() {
         borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#fff', pointBorderWidth: 2,
         tension: .3, spanGaps: true,
       });
-      if (isStateLevel && SE_MODE) {
-        // Referências SE pública / Brasil pública (uma vez por etapa selecionável via dados)
-        const sePub = chartLabels.map(a => refs.se_publica?.[a]?.[et] ?? null);
-        const brPub = chartLabels.map(a => refs.brasil_publica?.[a]?.[et] ?? null);
-        if (etIdx === 0 && sePub.some(v => v != null)) {
-          datasets.push({
-            label: 'SE — Rede Pública', data: sePub, _isMeta: true, _etIdx: etIdx, _isSeduc: false,
-            borderColor: '#78909C', borderWidth: 1.6, borderDash: [5, 4],
-            pointRadius: 2, pointBackgroundColor: '#78909C', tension: .3, spanGaps: true,
-          });
-        }
-        if (etIdx === 0 && brPub.some(v => v != null)) {
-          // Brasil: usar etapa AI na 1ª série; AF/EM entram nas outras séries abaixo
-        }
-        if (brPub.some(v => v != null)) {
-          datasets.push({
-            label: `Brasil Pública — ${idebLabels[etIdx]}`, data: brPub, _isMeta: true, _etIdx: etIdx, _isSeduc: false,
-            borderColor: '#B0BEC5', borderWidth: 1.4, borderDash: [2, 3],
-            pointRadius: 0, tension: .3, spanGaps: true,
-          });
-        }
+      if (isStateLevel && SE_MODE && typeof IdebSE !== 'undefined') {
+        const overlays = IdebSE.getOverlayDatasets(ideb, chartLabels, et);
+        overlays.forEach(o => {
+          o._etIdx = etIdx;
+          o._isSeduc = false;
+          datasets.push(o);
+        });
       } else if (isStateLevel && !SE_MODE) {
         const dataMeta = chartLabels.map(a => METAS_SEDUC[et]?.[parseInt(a)] ?? null);
         if (dataMeta.some(v => v != null)) {
@@ -5033,20 +5022,7 @@ function renderIdeb() {
         }
       }
     });
-    // SE pública AF/EM (além da AI já adicionada)
-    if (isStateLevel && SE_MODE && refs.se_publica) {
-      ['AF', 'EM'].forEach((et, i) => {
-        const etIdx = i + 1;
-        const sePub = chartLabels.map(a => refs.se_publica?.[a]?.[et] ?? null);
-        if (sePub.some(v => v != null)) {
-          datasets.push({
-            label: `SE Pública — ${idebLabels[etIdx]}`, data: sePub, _isMeta: true, _etIdx: etIdx, _isSeduc: false,
-            borderColor: '#90A4AE', borderWidth: 1.4, borderDash: [5, 4],
-            pointRadius: 0, tension: .3, spanGaps: true,
-          });
-        }
-      });
-    }
+
     S.charts.push(new Chart(elEvo, {
       type: 'line',
       data: { labels: chartLabels, datasets },
@@ -5384,6 +5360,11 @@ function renderIdeb() {
   }
   bindTopbarFilters();
   bindRedeToggle();
+  if (SE_MODE && typeof IdebSE !== 'undefined') {
+    IdebSE.bindEvoControls();
+    IdebSE.bindAll(ideb);
+  }
+
   updateActiveFilters();
 }
 
