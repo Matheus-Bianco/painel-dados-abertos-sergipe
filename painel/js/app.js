@@ -4647,6 +4647,13 @@ function getIdebColor(v) {
   return '#E53935';
 }
 
+/** Formata IDEB sem forçar 1 casa decimal (até 4 casas úteis). */
+function fmtIdeb(v) {
+  if (v == null || v === '' || Number.isNaN(Number(v))) return '—';
+  const n = Number(v);
+  return n.toFixed(4).replace(/\.?0+$/, '').replace('.', ',');
+}
+
 // Metas IDEB projetadas pela SEDUC-RS (2023–2035) — destrinchadas por etapa
 const METAS_SEDUC = {
   AI: { 2023: 5.8, 2024: 6.0, 2025: 6.11, 2026: 6.20, 2027: 6.26, 2028: 6.34, 2029: 6.43, 2030: 6.52, 2031: 6.58, 2032: 6.63, 2033: 6.66, 2034: 6.68, 2035: 6.69 },
@@ -4697,7 +4704,8 @@ function renderIdeb() {
             sumEsc += m.n_escolas || 1;
           }
         }
-        if (sumEsc > 0) agg[et] = { ideb: +(sumIdeb / sumEsc).toFixed(2), n_escolas: sumEsc };
+        // Sem arredondar a média da DRE — mantém precisão completa no painel
+        if (sumEsc > 0) agg[et] = { ideb: sumIdeb / sumEsc, n_escolas: sumEsc };
       }
       return Object.keys(agg).length ? agg : null;
     }
@@ -4743,7 +4751,7 @@ function renderIdeb() {
     const d = lastData[ek];
     if (!d) continue;
     const p = prevData[ek];
-    const delta = p ? +(d.ideb - p.ideb).toFixed(2) : null;
+    const delta = p && d.ideb != null && p.ideb != null ? (d.ideb - p.ideb) : null;
     // Sparkline
     const sparkVals = anos.map(a => getGeoData(a)?.[ek]?.ideb ?? null).filter(v => v != null);
     const sparkMax = sparkVals.length ? Math.max(...sparkVals) : 1;
@@ -4753,8 +4761,8 @@ function renderIdeb() {
     const sparkPts = sparkVals.map((v, j) => `${(j / Math.max(sparkVals.length - 1, 1)) * 58 + 1},${23 - ((v - sparkMin) / sparkRange) * 20}`).join(' ');
     const sparkline = sparkVals.length >= 2 ? `<svg class="kpi-sparkline" viewBox="0 0 60 24" width="60" height="24"><polyline points="${sparkPts}" fill="none" stroke="${sparkColor}" stroke-width="1.5" stroke-linecap="round"/></svg>` : '';
     kpis.push({
-      label: `IDEB ${cfg.label}`, val: d.ideb?.toFixed(1), accent: cfg.accent, icon: cfg.icon, sparkline,
-      sub: delta !== null ? `${delta >= 0 ? '+' : ''}${delta} vs ${penultimo}` : `${d.n_escolas || 0} escolas`,
+      label: `IDEB ${cfg.label}`, val: fmtIdeb(d.ideb), accent: cfg.accent, icon: cfg.icon, sparkline,
+      sub: delta !== null ? `${delta >= 0 ? '+' : ''}${fmtIdeb(delta)} vs ${penultimo}` : `${d.n_escolas || 0} escolas`,
     });
   }
 
@@ -4935,13 +4943,14 @@ function renderIdeb() {
             },
           },
           datalabels: {
-            display: ctx => !ctx.dataset._isMeta,
-            anchor: ctx => ctx.dataset._etIdx === 2 ? 'start' : 'end',
-            align: ctx => ctx.dataset._etIdx === 2 ? 'bottom' : 'top',
+            // Inclui séries dos toggles de comparação (overlays)
+            display: true,
+            anchor: ctx => ctx.dataset._isMeta ? 'end' : (ctx.dataset._etIdx === 2 ? 'start' : 'end'),
+            align: ctx => ctx.dataset._isMeta ? 'top' : (ctx.dataset._etIdx === 2 ? 'bottom' : 'top'),
             offset: 4,
             font: { family: 'Inter', size: 10, weight: '700' },
-            color: ctx => idebCores[ctx.dataset._etIdx] || '#999',
-            formatter: v => v?.toFixed(1) ?? '',
+            color: ctx => ctx.dataset.borderColor || idebCores[ctx.dataset._etIdx] || '#999',
+            formatter: v => (v == null ? '' : fmtIdeb(v)),
           },
         },
         scales: { ...CHART_DEFAULTS.scales, y: { ...CHART_DEFAULTS.scales.y, beginAtZero: false, min: 2, suggestedMax: 8 } },
@@ -4996,7 +5005,7 @@ function renderIdeb() {
               anchor: 'end', align: 'end', offset: 2,
               font: { family: 'Inter', size: 9, weight: '700' },
               color: idebCores[etIdx],
-              formatter: v => v?.toFixed(1) ?? '',
+              formatter: v => (v == null ? '' : fmtIdeb(v)),
             },
           },
           scales: {
@@ -5041,9 +5050,9 @@ function renderIdeb() {
       if (!md) { this._div.innerHTML = `<h4>${nome}</h4><div style="color:#999;font-size:11px">Sem dados IDEB</div>`; return; }
       this._div.innerHTML = `
         <h4>${nome}</h4>
-        ${md.AI ? `<div class="info-row"><span class="info-label">IDEB Anos Iniciais</span><span class="info-value" style="color:${getIdebColor(md.AI.ideb)};font-weight:700">${md.AI.ideb?.toFixed(1)}</span></div>` : ''}
-        ${md.AF ? `<div class="info-row"><span class="info-label">IDEB Anos Finais</span><span class="info-value" style="color:${getIdebColor(md.AF.ideb)};font-weight:700">${md.AF.ideb?.toFixed(1)}</span></div>` : ''}
-        ${md.EM ? `<div class="info-row"><span class="info-label">IDEB EM</span><span class="info-value" style="color:${getIdebColor(md.EM.ideb)};font-weight:700">${md.EM.ideb?.toFixed(1)}</span></div>` : ''}`;
+        ${md.AI ? `<div class="info-row"><span class="info-label">IDEB Anos Iniciais</span><span class="info-value" style="color:${getIdebColor(md.AI.ideb)};font-weight:700">${fmtIdeb(md.AI.ideb)}</span></div>` : ''}
+        ${md.AF ? `<div class="info-row"><span class="info-label">IDEB Anos Finais</span><span class="info-value" style="color:${getIdebColor(md.AF.ideb)};font-weight:700">${fmtIdeb(md.AF.ideb)}</span></div>` : ''}
+        ${md.EM ? `<div class="info-row"><span class="info-label">IDEB EM</span><span class="info-value" style="color:${getIdebColor(md.EM.ideb)};font-weight:700">${fmtIdeb(md.EM.ideb)}</span></div>` : ''}`;
     };
     info.addTo(S.map);
 
@@ -5112,7 +5121,7 @@ function renderIdeb() {
         const cod = feature.properties.cod_cre;
         const nome = feature.properties.nome_cre || cod;
         const d = creData[cod];
-        layer.bindTooltip(`<strong>${nome}</strong><br>IDEB ${mapEtapa}: ${d?.avg?.toFixed(1) ?? '—'}<br>${d?.totalEsc || 0} escolas`, { sticky: true });
+        layer.bindTooltip(`<strong>${nome}</strong><br>IDEB ${mapEtapa}: ${d?.avg != null ? fmtIdeb(d.avg) : '—'}<br>${d?.totalEsc || 0} escolas`, { sticky: true });
         layer.on('click', () => { S.creSel = cod; const selCre = document.getElementById('sel-cre'); if (selCre) selCre.value = cod; populateMunDropdown(cod); refreshActiveTab(); });
       }
     }).addTo(S.map);
@@ -5173,7 +5182,7 @@ function renderIdeb() {
 
     const colorCell = v => {
       if (v == null) return '<td style="color:#ccc">—</td>';
-      return `<td><strong style="color:${getIdebColor(v)}">${v.toFixed(1)}</strong></td>`;
+      return `<td><strong style="color:${getIdebColor(v)}">${fmtIdeb(v)}</strong></td>`;
     };
 
     tbody.innerHTML = entries.map(([cod, md], i) => `

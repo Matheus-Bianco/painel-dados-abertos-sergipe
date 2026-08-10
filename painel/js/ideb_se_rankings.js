@@ -11,17 +11,22 @@
   const EM_ONLY = () => !!(global.SE_EM_ONLY);
   const ETAPAS_ATIVAS = () => (EM_ONLY() ? ['EM'] : ['AI', 'AF', 'EM']);
 
+  /** Sem forçar 1 casa — até 4 casas úteis (importante p/ médias de DRE). */
   function fmtNum(v) {
-    return v == null || v === '' ? '—' : Number(v).toFixed(1).replace('.', ',');
+    if (v == null || v === '') return '—';
+    if (typeof global.fmtIdeb === 'function') return global.fmtIdeb(v);
+    const n = Number(v);
+    if (Number.isNaN(n)) return '—';
+    return n.toFixed(4).replace(/\.?0+$/, '').replace('.', ',');
   }
 
   function fmtDelta(d) {
     if (d == null || Number.isNaN(d)) return '<span style="color:#999">—</span>';
-    if (d === 0) return '<span style="color:#666;font-weight:600">0,0</span>';
+    if (d === 0) return '<span style="color:#666;font-weight:600">0</span>';
     // positivo = acima de SE (eles melhores) → vermelho; negativo → verde (SE à frente)
     const cls = d > 0 ? '#C62828' : '#2E7D32';
     const sign = d > 0 ? '+' : '';
-    return `<span style="color:${cls};font-weight:700">${sign}${Number(d).toFixed(1).replace('.', ',')}</span>`;
+    return `<span style="color:${cls};font-weight:700">${sign}${fmtNum(d)}</span>`;
   }
 
   function idebColor(v) {
