@@ -4647,11 +4647,10 @@ function getIdebColor(v) {
   return '#E53935';
 }
 
-/** Formata IDEB sem forçar 1 casa decimal (até 4 casas úteis). */
+/** Formata IDEB com 1 casa decimal. */
 function fmtIdeb(v) {
   if (v == null || v === '' || Number.isNaN(Number(v))) return '—';
-  const n = Number(v);
-  return n.toFixed(4).replace(/\.?0+$/, '').replace('.', ',');
+  return Number(v).toFixed(1).replace('.', ',');
 }
 
 // Metas IDEB projetadas pela SEDUC-RS (2023–2035) — destrinchadas por etapa
