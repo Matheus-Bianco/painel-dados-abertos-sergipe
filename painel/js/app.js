@@ -4941,6 +4941,15 @@ function renderIdeb() {
               },
             },
           },
+          tooltip: {
+            ...CHART_DEFAULTS.plugins.tooltip,
+            callbacks: {
+              label: ctx => {
+                const v = ctx.parsed?.y ?? ctx.parsed;
+                return ` ${ctx.dataset.label || ''}: ${v == null ? '—' : fmtIdeb(v)}`;
+              },
+            },
+          },
           datalabels: {
             // Inclui séries dos toggles de comparação (overlays)
             display: true,
@@ -4999,6 +5008,18 @@ function renderIdeb() {
           plugins: {
             ...CHART_DEFAULTS.plugins,
             legend: { display: true, labels: { font: { family: 'Inter', size: 10, weight: '600' }, boxWidth: 10, padding: 6 } },
+            tooltip: {
+              ...CHART_DEFAULTS.plugins.tooltip,
+              callbacks: {
+                label: ctx => {
+                  const v = ctx.parsed?.y ?? ctx.parsed;
+                  if (v == null) return ` ${ctx.dataset.label || ''}: —`;
+                  // Nota SAEB (N) com 1 casa; aprovação já em %
+                  if (ctx.dataset.yAxisID === 'yP') return ` ${ctx.dataset.label || ''}: ${Number(v).toFixed(1).replace('.', ',')}%`;
+                  return ` ${ctx.dataset.label || ''}: ${fmtIdeb(v)}`;
+                },
+              },
+            },
             datalabels: {
               display: ctx => ctx.datasetIndex === 0,
               anchor: 'end', align: 'end', offset: 2,
