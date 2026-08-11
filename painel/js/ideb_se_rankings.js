@@ -9,7 +9,13 @@
   const ET_LABEL = { AI: 'Anos Iniciais', AF: 'Anos Finais', EM: 'Ens. Médio' };
   const ET_COLOR = { AI: '#1d71b9', AF: '#F57C00', EM: '#EE302F' };
   const EM_ONLY = () => !!(global.SE_EM_ONLY);
-  const ETAPAS_ATIVAS = () => (EM_ONLY() ? ['EM'] : ['AI', 'AF', 'EM']);
+  /** Uma etapa por vez — sincronizada com S.idebEtapa (default EM). */
+  const ETAPAS_ATIVAS = () => {
+    if (EM_ONLY()) return ['EM'];
+    const et = (global.S && global.S.idebEtapa) || 'EM';
+    return ['AI', 'AF', 'EM'].includes(et) ? [et] : ['EM'];
+  };
+  const etapaAtiva = () => ETAPAS_ATIVAS()[0] || 'EM';
 
   /** IDEB com 1 casa decimal. */
   function fmtNum(v) {
@@ -96,7 +102,7 @@
     return `
       <div class="section-divider">
         <span class="section-divider-icon"><img src="img/icons/panorama.png" alt=""></span>
-        <span class="section-divider-text">Ranking completo — Municípios SE (${ano})</span>
+        <span class="section-divider-text">Ranking completo — Municípios SE · ${ET_LABEL[fullEt]} (${ano})</span>
         <span class="section-divider-line"></span>
       </div>
       <div class="chart-card" style="padding:0;overflow:hidden;margin-bottom:10px">
@@ -239,8 +245,9 @@
         </div>`;
     };
 
+    const etPos = etapaAtiva();
     const serie = ideb?.rankings?.posicao_se_serie;
-    const pickSerie = (mode, a) => (serie?.[mode]?.EM || []).find(p => String(p.ano) === String(a));
+    const pickSerie = (mode, a) => (serie?.[mode]?.[etPos] || []).find(p => String(p.ano) === String(a));
     const ganhoBanner = (() => {
       if (!serie) return '';
       const br23 = pickSerie('brasil', '2023');
@@ -262,14 +269,14 @@
       return `
         <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin:0 0 10px">
           <div style="padding:10px 12px;border-radius:8px;background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border:1px solid #86efac">
-            <div style="font-size:10px;font-weight:600;color:#166534;letter-spacing:.02em">BRASIL · 2023 → 2025</div>
+            <div style="font-size:10px;font-weight:600;color:#166534;letter-spacing:.02em">BRASIL · ${ET_LABEL[etPos]} · 2023 → 2025</div>
             <div style="font-size:1.15rem;font-weight:800;color:#14532d;margin-top:2px">${txtBr}</div>
             <div style="font-size:10.5px;color:#334155;margin-top:3px">${br23.posicao}º → ${br25.posicao}º
               <span style="color:#64748b"> · faixas ${faixa(br23)} → ${faixa(br25)}</span>
             </div>
           </div>
           <div style="padding:10px 12px;border-radius:8px;background:linear-gradient(135deg,#eff6ff,#f8fafc);border:1px solid #93c5fd">
-            <div style="font-size:10px;font-weight:600;color:#1e40af;letter-spacing:.02em">NORDESTE · 2023 → 2025</div>
+            <div style="font-size:10px;font-weight:600;color:#1e40af;letter-spacing:.02em">NORDESTE · ${ET_LABEL[etPos]} · 2023 → 2025</div>
             <div style="font-size:1.05rem;font-weight:800;color:#1e3a8a;margin-top:2px">${txtNe || '—'}</div>
             <div style="font-size:10.5px;color:#334155;margin-top:3px">${ne23 && ne25 ? `${ne23.posicao}º → ${ne25.posicao}º` : ''}
               ${ne23 && ne25 ? `<span style="color:#64748b"> · faixas ${faixa(ne23)} → ${faixa(ne25)}</span>` : ''}
@@ -287,7 +294,7 @@
     return `
       <div class="section-divider">
         <span class="section-divider-icon"><img src="img/icons/panorama.png" alt=""></span>
-        <span class="section-divider-text">Comparativo entre UFs — Rede Estadual (${ano})</span>
+        <span class="section-divider-text">Comparativo entre UFs — ${ET_LABEL[etPos]} · Rede Estadual (${ano})</span>
         <span class="section-divider-line"></span>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
@@ -298,11 +305,11 @@
         </div>
         <span style="font-size:10px;color:#888;margin-left:4px">Sempre rede estadual oficial do INEP</span>
       </div>
-      <div class="charts-grid" style="display:grid;grid-template-columns:${etapas.length === 3 ? '1fr 1fr 1fr' : '1fr'};gap:10px;margin-bottom:10px">
+      <div class="charts-grid" style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px">
         ${etapas.map(buildUfTable).join('')}
       </div>
       <div class="chart-card" style="margin-bottom:10px">
-        <div class="chart-title">Posição de Sergipe ao longo do tempo — Nordeste × Brasil</div>
+        <div class="chart-title">Posição de Sergipe ao longo do tempo — ${ET_LABEL[etPos]} · Nordeste × Brasil</div>
         ${ganhoBanner}
         <div style="height:280px"><canvas id="chart-ideb-se-posicao"></canvas></div>
         <div class="chart-source">${typeof FONTE_IDEB !== 'undefined' ? FONTE_IDEB : 'Fonte: IDEB/INEP'} · Eixo Y invertido (1º = melhor) · rótulo em faixa = empate de IDEB</div>
@@ -483,9 +490,14 @@
 
   // ─── Escolas ──────────────────────────────────────────────
   function buildEscolasHTML(ideb, creSel, munSel) {
-    const esc = ideb?.rankings?.escolas;
+    const escRoot = ideb?.rankings?.escolas;
+    if (!escRoot) return '';
+    const et = etapaAtiva();
+    // Novo schema: escolas.etapas[et]; fallback legado: lista com campo EM
+    const esc = escRoot.etapas?.[et]
+      || (et === 'EM' && Array.isArray(escRoot.lista) ? escRoot : null);
     if (!esc) return '';
-    const ano = esc.ano || 2023;
+    const ano = esc.ano || escRoot.ano || 2025;
     let lista = esc.lista || [];
     if (munSel) lista = lista.filter(e => e.cod_mun === munSel);
     else if (creSel) {
@@ -494,37 +506,40 @@
     }
 
     const ranked = lista.map(e => ({ ...e })).sort((a, b) => {
-      const va = a.EM ?? a.AI ?? a.AF ?? -1;
-      const vb = b.EM ?? b.AI ?? b.AF ?? -1;
+      const va = a.ideb ?? a[et] ?? -1;
+      const vb = b.ideb ?? b[et] ?? -1;
       return (vb - va) || a.nome.localeCompare(b.nome, 'pt-BR');
     });
     ranked.forEach((r, i) => { r.pos = i + 1; });
 
     const anoAnt = esc.ano_ant || (Number(ano) - 2);
     const seIdebEsc = esc.se_ideb;
-    const body = ranked.map(r => `
+    const body = ranked.map(r => {
+      const idebVal = r.ideb ?? r[et];
+      return `
       <tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-mun="${norm(r.nome_mun)}"
-        data-em="${r.EM ?? ''}" data-iant="${r.ideb_ant ?? ''}" data-dant="${r.delta_vs_ant ?? ''}"
+        data-ideb="${idebVal ?? ''}" data-iant="${r.ideb_ant ?? ''}" data-dant="${r.delta_vs_ant ?? ''}"
         data-delta="${r.delta_vs_se ?? ''}" data-dre="${norm(r.dre || '')}">
         ${td(r.pos, 'center', 'font-weight:700;color:#1a365d')}
         ${td(r.nome)}
         ${td(r.nome_mun || '—')}
         ${td(r.dre || '—', 'center', 'font-size:10px;color:#666')}
         ${td(fmtNum(r.ideb_ant), 'center', 'color:#64748b')}
-        ${td(fmtNum(r.EM), 'center', `font-weight:700;color:${idebColor(r.EM)}`)}
+        ${td(fmtNum(idebVal), 'center', `font-weight:700;color:${idebColor(idebVal)}`)}
         ${td(fmtDelta(r.delta_vs_ant), 'center')}
         ${td(fmtDelta(r.delta_vs_se), 'center')}
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     return `
       <div class="section-divider">
         <span class="section-divider-icon"><img src="img/icons/escola.png" alt=""></span>
-        <span class="section-divider-text">Ranking de Escolas — Ensino Médio (${ano})</span>
+        <span class="section-divider-text">Ranking de Escolas — ${ET_LABEL[et]} (${ano})</span>
         <span class="section-divider-line"></span>
       </div>
       <div class="chart-card" style="padding:0;overflow:hidden;margin-bottom:10px">
         <div style="padding:10px 14px;border-bottom:1px solid #e8ecf1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-          <div class="chart-title" style="margin:0">${ranked.length} escolas estaduais com IDEB EM
+          <div class="chart-title" style="margin:0">${ranked.length} escolas estaduais com IDEB ${et}
             ${seIdebEsc != null ? `<span style="font-size:10.5px;font-weight:500;color:#555;margin-left:8px">SE ${ano}: <strong style="color:#1a365d">${fmtNum(seIdebEsc)}</strong></span>` : ''}
           </div>
           <input type="text" id="ideb-se-esc-search" placeholder="Buscar escola ou município..."
@@ -539,7 +554,7 @@
               ${th('mun', 'Município')}
               ${th('dre', 'DRE', 'center')}
               ${th('iant', `IDEB ${anoAnt}`, 'center')}
-              ${th('em', `IDEB ${ano}`, 'center')}
+              ${th('ideb', `IDEB ${ano}`, 'center')}
               ${th('dant', `Δ ${anoAnt}→${ano}`, 'center')}
               ${th('delta', 'Δ vs SE', 'center')}
             </tr></thead>
@@ -651,8 +666,8 @@
     if (bBr) bBr.onclick = () => setScope('brasil');
     if (bNe) bNe.onclick = () => setScope('nordeste');
 
-    ['ai', 'af', 'em'].forEach(slug => {
-      bindSortable(document.getElementById(`ideb-se-uf-${slug}-table`), { defaultCol: 'pos', defaultAsc: true });
+    ETAPAS_ATIVAS().forEach(et => {
+      bindSortable(document.getElementById(`ideb-se-uf-${et.toLowerCase()}-table`), { defaultCol: 'pos', defaultAsc: true });
     });
 
     paintPosicaoChart(ideb);

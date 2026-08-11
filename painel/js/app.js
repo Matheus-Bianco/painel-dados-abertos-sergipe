@@ -10,8 +10,9 @@ Chart.defaults.set('plugins.datalabels', { display: false }); // off by default,
 
 // ── Modo Sergipe (SEED) ──────────────────────────────────
 const SE_MODE = true;
-const SE_EM_ONLY = true;       // painel só Ensino Médio
+const SE_EM_ONLY = false;      // AI + AF + EM com toggle de etapa
 const SE_ESTADUAL_ONLY = true; // sem toggle de redes
+const IDEB_ETAPA_LABEL = { AI: 'Anos Iniciais', AF: 'Anos Finais', EM: 'Ensino Médio' };
 const SE = {
   uf: 'SE',
   ufNome: 'Sergipe',
@@ -4683,7 +4684,9 @@ function renderIdeb() {
   const anos = Object.keys(ideb.serie_temporal).sort();
   const ultimo = anos[anos.length - 1];
   const lookup = ideb.lookup_municipios || {};
-  S.idebEtapa = S.idebEtapa || 'AI';
+  if (!S.idebEtapa || !['AI', 'AF', 'EM'].includes(S.idebEtapa)) S.idebEtapa = 'EM';
+  if (SE_EM_ONLY) S.idebEtapa = 'EM';
+  const etapaAtiva = S.idebEtapa;
 
   // ── Geo-aware helper ──
   const getGeoData = (ano) => {
@@ -4731,27 +4734,25 @@ function renderIdeb() {
   const lastData = getGeoData(anoSel) || {};
   const prevData = penultimo ? (getGeoData(penultimo) || {}) : {};
 
-  // ── KPIs ──
-  if (SE_EM_ONLY) S.idebEtapa = 'EM';
-  const etapaMap = SE_EM_ONLY
-    ? { EM: { label: 'Ensino Médio', icon: 'img/icons/medio.png', accent: 'red' } }
-    : {
-      AI: { label: 'Anos Iniciais', icon: 'img/icons/fundamental.png', accent: 'green' },
-      AF: { label: 'Anos Finais', icon: 'img/icons/fundamental.png', accent: 'blue' },
-      EM: { label: 'Ensino Médio', icon: 'img/icons/medio.png', accent: 'red' },
-    };
-  const idebEtapas = SE_EM_ONLY ? ['EM'] : ['AI', 'AF', 'EM'];
-  const idebLabels = SE_EM_ONLY ? ['Ens. Médio'] : ['Anos Iniciais', 'Anos Finais', 'Ens. Médio'];
-  // AI verde institucional · AF laranja · EM vermelho (cores bem distintas na série)
-  const idebCores = SE_EM_ONLY ? [COLORS.red] : [COLORS.pri, COLORS.fundAF, COLORS.red];
+  // ── KPIs (todas as etapas) + visualizações filtradas pela etapa ativa ──
+  const etapaMap = {
+    AI: { label: 'Anos Iniciais', icon: 'img/icons/fundamental.png', accent: 'green' },
+    AF: { label: 'Anos Finais', icon: 'img/icons/fundamental.png', accent: 'blue' },
+    EM: { label: 'Ensino Médio', icon: 'img/icons/medio.png', accent: 'red' },
+  };
+  const idebEtapas = SE_EM_ONLY ? ['EM'] : [etapaAtiva];
+  const idebLabels = idebEtapas.map(et => IDEB_ETAPA_LABEL[et] || et);
+  const idebCoresMap = { AI: COLORS.pri, AF: COLORS.fundAF, EM: COLORS.red };
+  const idebCores = idebEtapas.map(et => idebCoresMap[et] || COLORS.pri);
+  const etapaLabelAtiva = IDEB_ETAPA_LABEL[etapaAtiva] || etapaAtiva;
 
   const kpis = [];
   for (const [ek, cfg] of Object.entries(etapaMap)) {
+    if (SE_EM_ONLY && ek !== 'EM') continue;
     const d = lastData[ek];
     if (!d) continue;
     const p = prevData[ek];
     const delta = p && d.ideb != null && p.ideb != null ? (d.ideb - p.ideb) : null;
-    // Sparkline
     const sparkVals = anos.map(a => getGeoData(a)?.[ek]?.ideb ?? null).filter(v => v != null);
     const sparkMax = sparkVals.length ? Math.max(...sparkVals) : 1;
     const sparkMin = sparkVals.length ? Math.min(...sparkVals) : 0;
@@ -4759,16 +4760,36 @@ function renderIdeb() {
     const sparkColor = cfg.accent === 'green' ? COLORS.pri : cfg.accent === 'blue' ? '#1565C0' : COLORS.red;
     const sparkPts = sparkVals.map((v, j) => `${(j / Math.max(sparkVals.length - 1, 1)) * 58 + 1},${23 - ((v - sparkMin) / sparkRange) * 20}`).join(' ');
     const sparkline = sparkVals.length >= 2 ? `<svg class="kpi-sparkline" viewBox="0 0 60 24" width="60" height="24"><polyline points="${sparkPts}" fill="none" stroke="${sparkColor}" stroke-width="1.5" stroke-linecap="round"/></svg>` : '';
+    const dCls = delta == null ? '' : delta > 0 ? 'up' : delta < 0 ? 'down' : 'neutral';
     kpis.push({
-      label: `IDEB ${cfg.label}`, val: fmtIdeb(d.ideb), accent: cfg.accent, icon: cfg.icon, sparkline,
+      et: ek, label: `IDEB ${cfg.label}`, val: fmtIdeb(d.ideb), accent: cfg.accent, icon: cfg.icon, sparkline,
       sub: delta !== null ? `${delta >= 0 ? '+' : ''}${fmtIdeb(delta)} vs ${penultimo}` : `${d.n_escolas || 0} escolas`,
+      dCls, active: ek === etapaAtiva,
     });
   }
 
-  // ── Example calculation from state-level data ──
-  const stLast = ideb.serie_temporal[ultimo] || {};
-  const exAI = stLast.AI;
-  const exEM = stLast.EM;
+  const kpiStripHTML = `
+    <div class="kpi-strip" id="ideb-kpis" style="grid-template-columns:repeat(${Math.max(kpis.length, 1)},1fr);margin:8px 0 10px">
+      ${kpis.map((k, i) => `
+        <div class="kpi-card accent-${k.accent}${k.active ? ' ideb-kpi-active' : ''}" data-ideb-etapa="${k.et}"
+          style="animation-delay:${i * 80}ms;cursor:pointer${k.active ? ';outline:2px solid #14507f;outline-offset:1px' : ''}"
+          title="Clique para filtrar as visualizações em ${IDEB_ETAPA_LABEL[k.et]}">
+          <div class="kpi-top"><span class="kpi-label">${k.label}</span><img class="kpi-icon" src="${k.icon}" alt=""></div>
+          <div class="kpi-body"><span class="kpi-value">${k.val}</span>${k.sparkline || ''}</div>
+          <div class="kpi-footer"><span class="kpi-delta ${k.dCls}">${k.sub}</span></div>
+        </div>`).join('')}
+    </div>`;
+
+  const etapaToggleHTML = SE_EM_ONLY ? '' : `
+    <div style="display:flex;gap:8px;margin:0 0 12px;align-items:center;flex-wrap:wrap;padding:0 2px">
+      <span style="font-size:11px;font-weight:600;color:#555">Etapa:</span>
+      <div class="scope-toggle" role="group" aria-label="Etapa do IDEB">
+        ${['AI', 'AF', 'EM'].map(et => `
+          <button type="button" class="scope-toggle-btn${etapaAtiva === et ? ' active' : ''}"
+            data-ideb-etapa="${et}" id="ideb-etapa-${et.toLowerCase()}">${IDEB_ETAPA_LABEL[et]}</button>`).join('')}
+      </div>
+      <span style="font-size:10px;color:#888">Todas as visualizações abaixo seguem a etapa selecionada</span>
+    </div>`;
 
   // ════════════════════════════════════════════════════════════════
   //  HTML TEMPLATE
@@ -4777,19 +4798,21 @@ function renderIdeb() {
     <div class="section-sticky">
       ${sectionBanner('img/icons/nav_ideb.png', SE_EM_ONLY ? 'IDEB Ensino Médio' : 'IDEB', geoLabel + (SE_ESTADUAL_ONLY ? ' · Rede Estadual' : ''))}
       ${redeToggleHTML()}
+      ${kpiStripHTML}
+      ${etapaToggleHTML}
     </div>
 
     <!-- ═══ EIXO: Evolução ═══ -->
     <div class="section-divider">
       <span class="section-divider-icon"><img src="img/icons/sec_evolucao.png" alt=""></span>
-      <span class="section-divider-text">IDEB Ensino Médio — Evolução (${anos[0]}–${anos[anos.length-1]})</span>
+      <span class="section-divider-text">IDEB ${etapaLabelAtiva} — Evolução (${anos[0]}–${anos[anos.length-1]})</span>
       <span class="section-divider-line"></span>
     </div>
 
     ${SE_MODE && typeof IdebSE !== 'undefined' ? IdebSE.buildEvoControlsHTML(ideb) : ''}
     <div class="charts-grid" style="display:grid;grid-template-columns:1fr;gap:10px">
       <div class="chart-card">
-        <div class="chart-title">${SE_MODE ? `IDEB Observado × Referências — ${geoLabel}` : `IDEB Observado × Meta SEDUC-RS — ${geoLabel}`}</div>
+        <div class="chart-title">${SE_MODE ? `IDEB Observado × Referências — ${geoLabel} · ${etapaLabelAtiva}` : `IDEB Observado × Meta SEDUC-RS — ${geoLabel}`}</div>
         <div style="height:360px"><canvas id="chart-ideb-evolucao"></canvas></div>
         <div class="chart-source">${FONTE_IDEB}</div>
       </div>
@@ -4801,25 +4824,14 @@ function renderIdeb() {
     <!-- ═══ EIXO: Decomposição N × P ═══ -->
     <div class="section-divider">
       <span class="section-divider-icon"><img src="img/icons/sec_saeb.png" alt=""></span>
-      <span class="section-divider-text">Decomposição — Nota SAEB (N) × Aprovação (P)${SE_EM_ONLY ? ' · Ensino Médio' : ''}</span>
+      <span class="section-divider-text">Decomposição — Nota SAEB (N) × Aprovação (P) · ${etapaLabelAtiva}</span>
       <span class="section-divider-line"></span>
     </div>
 
-    <div class="charts-grid" style="display:grid;grid-template-columns:${SE_EM_ONLY ? '1fr' : '1fr 1fr 1fr'};gap:10px">
-      ${SE_EM_ONLY ? '' : `
+    <div class="charts-grid" style="display:grid;grid-template-columns:1fr;gap:10px">
       <div class="chart-card">
-        <div class="chart-title">Anos Iniciais</div>
-        <div style="height:280px"><canvas id="chart-decomp-ai"></canvas></div>
-        <div class="chart-source">${FONTE_IDEB}</div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Anos Finais</div>
-        <div style="height:280px"><canvas id="chart-decomp-af"></canvas></div>
-        <div class="chart-source">${FONTE_IDEB}</div>
-      </div>`}
-      <div class="chart-card">
-        <div class="chart-title">Ensino Médio</div>
-        <div style="height:280px"><canvas id="chart-decomp-em"></canvas></div>
+        <div class="chart-title">${etapaLabelAtiva}</div>
+        <div style="height:280px"><canvas id="chart-decomp-ativa"></canvas></div>
         <div class="chart-source">${FONTE_IDEB}</div>
       </div>
     </div>
@@ -4835,26 +4847,21 @@ function renderIdeb() {
     <div class="map-table-row d1">
       <div class="map-container">
         <div class="map-toolbar">
-          <h3>Mapa — IDEB EM <span id="ideb-map-ano">${mapAno}</span></h3>
+          <h3>Mapa — IDEB ${etapaAtiva} <span id="ideb-map-ano">${mapAno}</span></h3>
           <div class="map-layer-toggle">
             <button class="map-layer-btn active" id="ideb-btn-layer-mun">Municípios</button>
             <button class="map-layer-btn" id="ideb-btn-layer-cre">${SE_MODE ? 'DREs' : 'CREs'}</button>
           </div>
-          ${SE_EM_ONLY ? `<span style="font-size:11px;font-weight:600;color:#555;padding:3px 8px">Ensino Médio</span>` : `
-          <select id="sel-ideb-map-etapa" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid #ccc">
-            <option value="AI" ${S.idebEtapa === 'AI' ? 'selected' : ''}>Anos Iniciais</option>
-            <option value="AF" ${S.idebEtapa === 'AF' ? 'selected' : ''}>Anos Finais</option>
-            <option value="EM" ${S.idebEtapa === 'EM' ? 'selected' : ''}>Ensino Médio</option>
-          </select>`}
+          <span style="font-size:11px;font-weight:600;color:#555;padding:3px 8px">${etapaLabelAtiva}</span>
         </div>
         <div style="font-size:9.5px;color:#888;padding:4px 0 2px;line-height:1.4;font-style:italic">
-          Municípios sem escolas estaduais de EM com IDEB no ano aparecem em cinza.
+          Municípios sem escolas estaduais de ${etapaLabelAtiva} com IDEB no ano aparecem em cinza.
         </div>
         <div id="ideb-map-leaflet" style="height:370px;border-radius:8px"></div>
       </div>
       <div class="table-wrapper" id="ideb-table-wrapper">
         <div class="table-header">
-          <h3>Tabela de Municípios — IDEB EM ${mapAno}</h3>
+          <h3>Tabela de Municípios — IDEB ${etapaAtiva} ${mapAno}</h3>
           <input type="text" class="table-search" id="ideb-mun-search" placeholder="Buscar...">
         </div>
         <div style="font-size:10px;color:#555;padding:4px 12px 6px;font-weight:600;background:rgba(29,113,185,.06);border-radius:0 0 6px 6px;border-top:1px dashed rgba(29,113,185,.25)">
@@ -4865,14 +4872,8 @@ function renderIdeb() {
             <thead><tr>
               <th>#</th>
               <th data-col="nome" class="sortable" style="cursor:pointer">Município \u25b2\u25bc</th>
-              ${SE_EM_ONLY ? `
-              <th data-col="em" class="sortable" style="cursor:pointer">IDEB EM \u25b2\u25bc</th>
+              <th data-col="ideb" class="sortable" style="cursor:pointer">IDEB ${etapaAtiva} \u25b2\u25bc</th>
               <th data-col="esc" class="sortable" style="cursor:pointer">Escolas \u25b2\u25bc</th>
-              ` : `
-              <th data-col="ai" class="sortable" style="cursor:pointer">AI \u25b2\u25bc</th>
-              <th data-col="af" class="sortable" style="cursor:pointer">AF \u25b2\u25bc</th>
-              <th data-col="em" class="sortable" style="cursor:pointer">EM \u25b2\u25bc</th>
-              `}
             </tr></thead>
             <tbody></tbody>
           </table>
@@ -4967,12 +4968,11 @@ function renderIdeb() {
   }
 
   // ════════════════════════════════════════════════════════════════
-  //  CHARTS 2-4: Decomposition N × P (3 separate cards, dual axis)
+  //  CHART: Decomposition N × P (etapa ativa)
   // ════════════════════════════════════════════════════════════════
   if (isStateLevel) {
-    const decompIdByEtapa = { AI: 'chart-decomp-ai', AF: 'chart-decomp-af', EM: 'chart-decomp-em' };
     idebEtapas.forEach((et, etIdx) => {
-      const el = document.getElementById(decompIdByEtapa[et]);
+      const el = document.getElementById('chart-decomp-ativa');
       if (!el) return;
       const anosEt = anos.filter(a => ideb.serie_temporal[a]?.[et]?.nota_saeb != null);
       if (anosEt.length === 0) return;
@@ -5055,7 +5055,7 @@ function renderIdeb() {
     if (!mapEl) return;
 
     const munData = ideb.por_municipio?.[mapAno] || ideb.por_municipio?.[anoSel] || {};
-    const mapEtapa = SE_EM_ONLY ? 'EM' : (S.idebEtapa || 'AI');
+    const mapEtapa = SE_EM_ONLY ? 'EM' : (S.idebEtapa || 'EM');
 
     destroyMap();
     S.map = L.map('ideb-map-leaflet', { zoomControl: true, scrollWheelZoom: true, attributionControl: false })
@@ -5116,7 +5116,7 @@ function renderIdeb() {
 
     const munToCre = S.creLookup?.mun_to_cre || {};
     const munData = ideb.por_municipio?.[mapAno] || ideb.por_municipio?.[anoSel] || {};
-    const mapEtapa = SE_EM_ONLY ? 'EM' : (S.idebEtapa || 'AI');
+    const mapEtapa = SE_EM_ONLY ? 'EM' : (S.idebEtapa || 'EM');
 
     const creData = {};
     for (const [cod, v] of Object.entries(munData)) {
@@ -5160,14 +5160,15 @@ function renderIdeb() {
   // ════════════════════════════════════════════════════════════════
   //  TABLE: Municipality ranking
   // ════════════════════════════════════════════════════════════════
-  let idebSortCol = SE_EM_ONLY ? 'em' : 'ai', idebSortAsc = false, idebSearchStr = '';
+  let idebSortCol = 'ideb', idebSortAsc = false, idebSearchStr = '';
 
   const idebBuildMunTable = () => {
     const tbody = document.querySelector('#ideb-mun-table tbody');
     if (!tbody) return;
     const munData = ideb.por_municipio?.[mapAno] || ideb.por_municipio?.[anoSel] || {};
+    const et = S.idebEtapa || 'EM';
 
-    let entries = Object.entries(munData);
+    let entries = Object.entries(munData).filter(([, md]) => md?.[et]?.ideb != null);
     if (S.creSel && S.creLookup?.mun_to_cre) {
       entries = entries.filter(([cod]) => S.creLookup.mun_to_cre[cod]?.cod_cre === S.creSel);
     }
@@ -5188,31 +5189,28 @@ function renderIdeb() {
       if (idebSortCol === 'nome') {
         va = lookup[a[0]] || a[0]; vb = lookup[b[0]] || b[0];
         return idebSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-      } else if (idebSortCol === 'ai') {
-        va = ma.AI?.ideb || 0; vb = mb.AI?.ideb || 0;
-      } else if (idebSortCol === 'af') {
-        va = ma.AF?.ideb || 0; vb = mb.AF?.ideb || 0;
-      } else if (idebSortCol === 'em') {
-        va = ma.EM?.ideb || 0; vb = mb.EM?.ideb || 0;
       } else if (idebSortCol === 'esc') {
-        va = ma.EM?.n_escolas || 0; vb = mb.EM?.n_escolas || 0;
+        va = ma[et]?.n_escolas || 0; vb = mb[et]?.n_escolas || 0;
+      } else {
+        va = ma[et]?.ideb || 0; vb = mb[et]?.ideb || 0;
       }
       return idebSortAsc ? va - vb : vb - va;
     });
 
-    const colorCell = v => {
-      if (v == null) return '<td style="color:#ccc">—</td>';
-      return `<td><strong style="color:${getIdebColor(v)}">${fmtIdeb(v)}</strong></td>`;
-    };
-
-    tbody.innerHTML = entries.map(([cod, md], i) => `
+    tbody.innerHTML = entries.map(([cod, md], i) => {
+      const v = md[et]?.ideb;
+      const nEsc = md[et]?.n_escolas;
+      const idebCell = v == null
+        ? '<td style="color:#ccc">—</td>'
+        : `<td><strong style="color:${getIdebColor(v)}">${fmtIdeb(v)}</strong></td>`;
+      return `
       <tr style="cursor:pointer" class="${S.munSel === cod ? 'selected' : ''}" data-cod="${cod}">
         <td>${i + 1}</td>
         <td><strong>${lookup[cod] || cod}</strong></td>
-        ${SE_EM_ONLY
-          ? `${colorCell(md.EM?.ideb)}<td style="text-align:center;color:#666">${md.EM?.n_escolas ?? '—'}</td>`
-          : `${colorCell(md.AI?.ideb)}${colorCell(md.AF?.ideb)}${colorCell(md.EM?.ideb)}`}
-      </tr>`).join('');
+        ${idebCell}
+        <td style="text-align:center;color:#666">${nEsc ?? '—'}</td>
+      </tr>`;
+    }).join('');
 
     // Click to filter
     tbody.querySelectorAll('tr[data-cod]').forEach(tr => {
@@ -5264,12 +5262,14 @@ function renderIdeb() {
     });
   }
 
-  // Map etapa selector
-  document.getElementById('sel-ideb-map-etapa')?.addEventListener('change', e => {
-    S.idebEtapa = e.target.value;
-    // Rebuild active layer
-    if (idebBtnCre?.classList.contains('active')) idebBuildCreMap();
-    else idebBuildMap();
+  // Toggle global de etapa (chips + KPIs)
+  const setIdebEtapa = (et) => {
+    if (!et || !['AI', 'AF', 'EM'].includes(et) || et === S.idebEtapa) return;
+    S.idebEtapa = et;
+    renderIdeb();
+  };
+  document.querySelectorAll('[data-ideb-etapa]').forEach(el => {
+    el.addEventListener('click', () => setIdebEtapa(el.getAttribute('data-ideb-etapa')));
   });
 
   // ── Populate topbar filters with IDEB years ──
