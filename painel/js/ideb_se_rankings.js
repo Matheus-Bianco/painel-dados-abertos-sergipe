@@ -20,13 +20,14 @@
     return n.toFixed(1).replace('.', ',');
   }
 
+  /** Semáforo: crescimento (verde) · estabilidade (amarelo) · decrescimento (vermelho). */
   function fmtDelta(d) {
-    if (d == null || Number.isNaN(d)) return '<span style="color:#999">—</span>';
-    if (d === 0) return '<span style="color:#666;font-weight:600">0,0</span>';
-    // positivo = acima de SE (eles melhores) → vermelho; negativo → verde (SE à frente)
-    const cls = d > 0 ? '#C62828' : '#2E7D32';
-    const sign = d > 0 ? '+' : '';
-    return `<span style="color:${cls};font-weight:700">${sign}${fmtNum(d)}</span>`;
+    if (d == null || d === '' || Number.isNaN(Number(d))) return '<span style="color:#999">—</span>';
+    const n = Number(d);
+    if (n === 0) return '<span style="color:#F9A825;font-weight:700">0,0</span>';
+    const color = n > 0 ? '#2E7D32' : '#C62828';
+    const sign = n > 0 ? '+' : '';
+    return `<span style="color:${color};font-weight:700">${sign}${fmtNum(n)}</span>`;
   }
 
   function idebColor(v) {
