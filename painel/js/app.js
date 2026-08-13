@@ -12,7 +12,12 @@ Chart.defaults.set('plugins.datalabels', { display: false }); // off by default,
 const SE_MODE = true;
 const SE_EM_ONLY = false;      // AI + AF + EM com toggle de etapa
 const SE_ESTADUAL_ONLY = true; // sem toggle de redes
+const SE_HIDE_DRE = true;      // sem filtro/mapa/coluna de Diretoria Regional
 const IDEB_ETAPA_LABEL = { AI: 'Anos Iniciais', AF: 'Anos Finais', EM: 'Ensino Médio' };
+// Expor flags para ideb_se_rankings.js (script clássico — const não vai ao window)
+window.SE_MODE = SE_MODE;
+window.SE_EM_ONLY = SE_EM_ONLY;
+window.SE_HIDE_DRE = SE_HIDE_DRE;
 const SE = {
   uf: 'SE',
   ufNome: 'Sergipe',
@@ -492,12 +497,13 @@ function sectionBanner(icon, title, subtitle, opts = {}) {
             <label class="banner-filter-label">Ano</label>
             <select id="sel-ano" class="banner-filter-select"></select>
           </div>
+          ${SE_HIDE_DRE ? '' : `
           <div class="banner-filter-group">
             <label class="banner-filter-label">${SE_MODE ? 'DRE' : 'CRE'}</label>
             <select id="sel-cre" class="banner-filter-select">
               <option value="">Todas</option>
             </select>
-          </div>
+          </div>`}
           <div class="banner-filter-group">
             <label class="banner-filter-label">Município</label>
             <div class="searchable-select" id="mun-search-wrapper">
@@ -730,7 +736,7 @@ function updateActiveFilters() {
     const name = ETAPA_MAP[S.etapaSel] || S.etapaSel;
     html += `<span class="filter-chip" data-clear="etapa" title="Clique para remover">📊 ${name} <span class="close">✕</span></span>`;
   }
-  if (S.creSel) {
+  if (S.creSel && !SE_HIDE_DRE) {
     const creName = S.creLookup?.cre_list?.find(c => c.cod_cre === S.creSel)?.nome_cre || `CRE ${S.creSel}`;
     html += `<span class="filter-chip" data-clear="cre" title="Clique para remover">🏫 ${creName} <span class="close">✕</span></span>`;
   }
@@ -4686,6 +4692,7 @@ function renderIdeb() {
   const lookup = ideb.lookup_municipios || {};
   if (!S.idebEtapa || !['AI', 'AF', 'EM'].includes(S.idebEtapa)) S.idebEtapa = 'EM';
   if (SE_EM_ONLY) S.idebEtapa = 'EM';
+  if (SE_HIDE_DRE) S.creSel = null; // painel SE sem recorte por DRE
   const etapaAtiva = S.idebEtapa;
 
   // ── Geo-aware helper ──
@@ -4693,7 +4700,7 @@ function renderIdeb() {
     if (S.munSel && ideb.por_municipio?.[ano]?.[S.munSel]) {
       return ideb.por_municipio[ano][S.munSel];
     }
-    if (S.creSel) {
+    if (!SE_HIDE_DRE && S.creSel) {
       const creMuns = getCreMuns(S.creSel);
       const munYear = ideb.por_municipio?.[ano] || {};
       const agg = {};
@@ -4706,7 +4713,6 @@ function renderIdeb() {
             sumEsc += m.n_escolas || 1;
           }
         }
-        // Sem arredondar a média da DRE — mantém precisão completa no painel
         if (sumEsc > 0) agg[et] = { ideb: sumIdeb / sumEsc, n_escolas: sumEsc };
       }
       return Object.keys(agg).length ? agg : null;
@@ -4848,10 +4854,11 @@ function renderIdeb() {
       <div class="map-container">
         <div class="map-toolbar">
           <h3>Mapa — IDEB ${etapaAtiva} <span id="ideb-map-ano">${mapAno}</span></h3>
+          ${SE_HIDE_DRE ? '' : `
           <div class="map-layer-toggle">
             <button class="map-layer-btn active" id="ideb-btn-layer-mun">Municípios</button>
             <button class="map-layer-btn" id="ideb-btn-layer-cre">${SE_MODE ? 'DREs' : 'CREs'}</button>
-          </div>
+          </div>`}
           <span style="font-size:11px;font-weight:600;color:#555;padding:3px 8px">${etapaLabelAtiva}</span>
         </div>
         <div style="font-size:9.5px;color:#888;padding:4px 0 2px;line-height:1.4;font-style:italic">
@@ -5248,18 +5255,20 @@ function renderIdeb() {
   idebBuildMunTable();
   injectExportButtons();
 
-  // Map layer toggle
-  const idebBtnMun = document.getElementById('ideb-btn-layer-mun');
-  const idebBtnCre = document.getElementById('ideb-btn-layer-cre');
-  if (idebBtnMun && idebBtnCre) {
-    idebBtnMun.addEventListener('click', () => {
-      idebBtnMun.classList.add('active'); idebBtnCre.classList.remove('active');
-      idebBuildMap();
-    });
-    idebBtnCre.addEventListener('click', () => {
-      idebBtnCre.classList.add('active'); idebBtnMun.classList.remove('active');
-      idebBuildCreMap();
-    });
+  // Map layer toggle (Municípios × DRE/CRE) — oculto no painel SE sem DRE
+  if (!SE_HIDE_DRE) {
+    const idebBtnMun = document.getElementById('ideb-btn-layer-mun');
+    const idebBtnCre = document.getElementById('ideb-btn-layer-cre');
+    if (idebBtnMun && idebBtnCre) {
+      idebBtnMun.addEventListener('click', () => {
+        idebBtnMun.classList.add('active'); idebBtnCre.classList.remove('active');
+        idebBuildMap();
+      });
+      idebBtnCre.addEventListener('click', () => {
+        idebBtnCre.classList.add('active'); idebBtnMun.classList.remove('active');
+        idebBuildCreMap();
+      });
+    }
   }
 
   // Toggle global de etapa (chips + KPIs)
@@ -5277,10 +5286,12 @@ function renderIdeb() {
   if (selAno) {
     selAno.innerHTML = anos.map(a => `<option value="${a}" ${a === anoSel ? 'selected' : ''}>${a}</option>`).join('');
   }
-  populateCreDropdown();
-  populateMunDropdown(S.creSel || null);
-  const selCre = document.getElementById('sel-cre');
-  if (selCre && S.creSel) selCre.value = S.creSel;
+  if (!SE_HIDE_DRE) populateCreDropdown();
+  populateMunDropdown(SE_HIDE_DRE ? null : (S.creSel || null));
+  if (!SE_HIDE_DRE) {
+    const selCre = document.getElementById('sel-cre');
+    if (selCre && S.creSel) selCre.value = S.creSel;
+  }
   const selMunEl = document.getElementById('sel-mun');
   if (selMunEl && S.munSel) selMunEl.value = S.munSel;
   if (S.munSel) {
@@ -11090,6 +11101,7 @@ function bindSidebarFilters() {
 
 /** Populate topbar CRE dropdown */
 function populateCreDropdown() {
+  if (SE_HIDE_DRE) return;
   const selCre = document.getElementById('sel-cre');
   if (!selCre || !S.creLookup) return;
   const list = S.creLookup.cre_list || [];
@@ -15586,18 +15598,26 @@ async function init() {
     if (SE_MODE) {
       S.redeSel = 'estadual';
       S.idebEtapa = 'EM';
-      // MVP Sergipe: apenas IDEB + geo + DRE lookup
-      const [respIdeb, respGeo, respDre, respCreGeo] = await Promise.all([
+      S.creSel = null;
+      // MVP Sergipe: IDEB + geo municípios (sem DRE)
+      const fetches = [
         fetch('dados/4_7_ideb.json'),
         fetch(SE.geoFile),
-        fetch(SE.dreLookupFile),
-        fetch('dados/se_dres.geojson'),
-      ]);
+      ];
+      if (!SE_HIDE_DRE) {
+        fetches.push(fetch(SE.dreLookupFile), fetch('dados/se_dres.geojson'));
+      }
+      const [respIdeb, respGeo, respDre, respCreGeo] = await Promise.all(fetches);
       if (!respIdeb.ok) throw new Error(`IDEB HTTP ${respIdeb.status}`);
       S.ideb = await respIdeb.json();
       if (respGeo.ok) S.geo = await respGeo.json();
-      if (respDre.ok) S.creLookup = await respDre.json();
-      if (respCreGeo.ok) S.creGeo = await respCreGeo.json();
+      if (!SE_HIDE_DRE) {
+        if (respDre?.ok) S.creLookup = await respDre.json();
+        if (respCreGeo?.ok) S.creGeo = await respCreGeo.json();
+      } else {
+        S.creLookup = null;
+        S.creGeo = null;
+      }
 
       // Stub S.data a partir do IDEB (anos + lookup) para filtros globais
       S.data = {

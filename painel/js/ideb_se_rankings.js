@@ -64,9 +64,9 @@
     return [];
   }
 
-  /** Filtra lista de municípios do ranking pelo DRE ativo. */
+  /** Filtra lista de municípios do ranking pelo DRE ativo (desligado no painel SE). */
   function filterMunRows(rows, creSel) {
-    if (!creSel) return rows;
+    if (global.SE_HIDE_DRE || !creSel) return rows;
     const allowed = new Set(getCreMunsSafe(creSel));
     if (!allowed.size) return rows;
     return rows.filter(r => allowed.has(r.cod));
@@ -500,7 +500,7 @@
     const ano = esc.ano || escRoot.ano || 2025;
     let lista = esc.lista || [];
     if (munSel) lista = lista.filter(e => e.cod_mun === munSel);
-    else if (creSel) {
+    else if (!global.SE_HIDE_DRE && creSel) {
       const allowed = new Set(getCreMunsSafe(creSel));
       if (allowed.size) lista = lista.filter(e => allowed.has(e.cod_mun));
     }
@@ -514,16 +514,17 @@
 
     const anoAnt = esc.ano_ant || (Number(ano) - 2);
     const seIdebEsc = esc.se_ideb;
+    const showDre = !global.SE_HIDE_DRE;
     const body = ranked.map(r => {
       const idebVal = r.ideb ?? r[et];
       return `
       <tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-mun="${norm(r.nome_mun)}"
         data-ideb="${idebVal ?? ''}" data-iant="${r.ideb_ant ?? ''}" data-dant="${r.delta_vs_ant ?? ''}"
-        data-delta="${r.delta_vs_se ?? ''}" data-dre="${norm(r.dre || '')}">
+        data-delta="${r.delta_vs_se ?? ''}"${showDre ? ` data-dre="${norm(r.dre || '')}"` : ''}>
         ${td(r.pos, 'center', 'font-weight:700;color:#1a365d')}
         ${td(r.nome)}
         ${td(r.nome_mun || '—')}
-        ${td(r.dre || '—', 'center', 'font-size:10px;color:#666')}
+        ${showDre ? td(r.dre || '—', 'center', 'font-size:10px;color:#666') : ''}
         ${td(fmtNum(r.ideb_ant), 'center', 'color:#64748b')}
         ${td(fmtNum(idebVal), 'center', `font-weight:700;color:${idebColor(idebVal)}`)}
         ${td(fmtDelta(r.delta_vs_ant), 'center')}
@@ -552,7 +553,7 @@
               ${th('pos', 'Pos.', 'center')}
               ${th('nome', 'Escola')}
               ${th('mun', 'Município')}
-              ${th('dre', 'DRE', 'center')}
+              ${showDre ? th('dre', 'DRE', 'center') : ''}
               ${th('iant', `IDEB ${anoAnt}`, 'center')}
               ${th('ideb', `IDEB ${ano}`, 'center')}
               ${th('dant', `Δ ${anoAnt}→${ano}`, 'center')}
@@ -573,7 +574,7 @@
     if (!tbody || !thead) return;
     let sortCol = opts?.defaultCol || 'pos';
     let sortAsc = opts?.defaultAsc !== false;
-    const ascDefault = new Set(['pos', 'nome', 'mun', 'dre']);
+    const ascDefault = new Set(['pos', 'nome', 'mun', ...(global.SE_HIDE_DRE ? [] : ['dre'])]);
 
     const paint = () => {
       thead.querySelectorAll('th.sortable').forEach(thEl => {
