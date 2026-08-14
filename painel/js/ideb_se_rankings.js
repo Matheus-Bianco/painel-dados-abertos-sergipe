@@ -500,7 +500,18 @@
     const ano = esc.ano || escRoot.ano || 2025;
     let lista = esc.lista || [];
     if (munSel) lista = lista.filter(e => e.cod_mun === munSel);
-    else if (!global.SE_HIDE_DRE && creSel) {
+
+    // Filtro local DRE (S.idebDreFilter) — só lista escolas, não recalcula IDEB SE
+    const dreFiltro = (global.S && global.S.idebDreFilter) || null;
+    if (dreFiltro) {
+      lista = lista.filter(e => {
+        if (e.dre === dreFiltro) return true;
+        if (typeof global.munBelongsToIdebDre === 'function') {
+          return global.munBelongsToIdebDre(e.cod_mun, dreFiltro);
+        }
+        return false;
+      });
+    } else if (!global.SE_HIDE_DRE && creSel) {
       const allowed = new Set(getCreMunsSafe(creSel));
       if (allowed.size) lista = lista.filter(e => allowed.has(e.cod_mun));
     }
@@ -514,13 +525,16 @@
 
     const anoAnt = esc.ano_ant || (Number(ano) - 2);
     const seIdebEsc = esc.se_ideb;
-    const showDre = !global.SE_HIDE_DRE;
+    const showDre = true; // coluna DRE útil com o filtro local
+    const dreSelectHTML = (typeof global.buildIdebDreSelectHTML === 'function')
+      ? global.buildIdebDreSelectHTML('ideb-se-esc-dre')
+      : '';
     const body = ranked.map(r => {
       const idebVal = r.ideb ?? r[et];
       return `
       <tr data-pos="${r.pos}" data-nome="${norm(r.nome)}" data-mun="${norm(r.nome_mun)}"
         data-ideb="${idebVal ?? ''}" data-iant="${r.ideb_ant ?? ''}" data-dant="${r.delta_vs_ant ?? ''}"
-        data-delta="${r.delta_vs_se ?? ''}"${showDre ? ` data-dre="${norm(r.dre || '')}"` : ''}>
+        data-delta="${r.delta_vs_se ?? ''}" data-dre="${norm(r.dre || '')}">
         ${td(r.pos, 'center', 'font-weight:700;color:#1a365d')}
         ${td(r.nome)}
         ${td(r.nome_mun || '—')}
@@ -542,10 +556,14 @@
         <div style="padding:10px 14px;border-bottom:1px solid #e8ecf1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div class="chart-title" style="margin:0">${ranked.length} escolas estaduais com IDEB ${et}
             ${seIdebEsc != null ? `<span style="font-size:10.5px;font-weight:500;color:#555;margin-left:8px">SE ${ano}: <strong style="color:#1a365d">${fmtNum(seIdebEsc)}</strong></span>` : ''}
+            ${dreFiltro ? `<span style="font-size:10px;color:#64748b;margin-left:6px">(filtro ${dreFiltro})</span>` : ''}
           </div>
-          <input type="text" id="ideb-se-esc-search" placeholder="Buscar escola ou município..."
-            style="font-size:11px;padding:4px 10px;border-radius:5px;border:1px solid #ccc;min-width:220px">
-          <span id="ideb-se-esc-count" style="font-size:10.5px;color:#666"></span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            ${dreSelectHTML}
+            <input type="text" id="ideb-se-esc-search" placeholder="Buscar escola ou município..."
+              style="font-size:11px;padding:4px 10px;border-radius:5px;border:1px solid #ccc;min-width:200px">
+            <span id="ideb-se-esc-count" style="font-size:10.5px;color:#666"></span>
+          </div>
         </div>
         <div style="max-height:480px;overflow:auto">
           <table id="ideb-se-esc-table" style="width:100%;border-collapse:collapse;min-width:760px">
@@ -562,7 +580,7 @@
             <tbody id="ideb-se-esc-tbody">${body}</tbody>
           </table>
         </div>
-        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP · Δ ${anoAnt}→${ano} = progresso da escola · Δ vs SE = escola − IDEB SE ${ano}</div>
+        <div class="chart-source" style="padding:8px 12px">Fonte: IDEB/INEP · Δ ${anoAnt}→${ano} = progresso da escola · Δ vs SE = escola − IDEB SE ${ano}${dreFiltro ? ' · Filtro DRE só lista escolas (IDEB SE permanece o oficial da rede)' : ''}</div>
       </div>`;
   }
 
@@ -574,7 +592,7 @@
     if (!tbody || !thead) return;
     let sortCol = opts?.defaultCol || 'pos';
     let sortAsc = opts?.defaultAsc !== false;
-    const ascDefault = new Set(['pos', 'nome', 'mun', ...(global.SE_HIDE_DRE ? [] : ['dre'])]);
+    const ascDefault = new Set(['pos', 'nome', 'mun', 'dre']);
 
     const paint = () => {
       thead.querySelectorAll('th.sortable').forEach(thEl => {

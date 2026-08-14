@@ -12,7 +12,7 @@ Chart.defaults.set('plugins.datalabels', { display: false }); // off by default,
 const SE_MODE = true;
 const SE_EM_ONLY = false;      // AI + AF + EM com toggle de etapa
 const SE_ESTADUAL_ONLY = true; // sem toggle de redes
-const SE_HIDE_DRE = true;      // sem filtro/mapa/coluna de Diretoria Regional
+const SE_HIDE_DRE = true;      // sem filtro DRE global (KPIs/evolução); filtro local só em escolas + territorial
 const IDEB_ETAPA_LABEL = { AI: 'Anos Iniciais', AF: 'Anos Finais', EM: 'Ensino Médio' };
 // Expor flags para ideb_se_rankings.js (script clássico — const não vai ao window)
 window.SE_MODE = SE_MODE;
@@ -77,7 +77,8 @@ const S = {
   depSel: 'Estadual',
   munSel: null,
 
-  creSel: null,      // selected CRE code e.g. '06'
+  creSel: null,      // selected CRE code e.g. '06' (global — desligado no SE)
+  idebDreFilter: null, // filtro local DRE: só ranking escolas + distribuição territorial
   etapaSel: null,     // selected etapa filter: 'mat_infantil', 'mat_fund_ai', 'mat_fund_af', 'mat_medio', 'mat_eja', 'mat_prof_tec', or null (all)
   profSel: null,       // selected profissional sub-filter for evolution chart: 'integrado', 'subsequente', 'concomitante', 'eja_tec', or null (all)
 
@@ -87,6 +88,8 @@ const S = {
 };
 // Expor para módulos satélite (ideb_se_rankings.js etc.) — overlays/filtros dependem disso
 window.S = S;
+window.buildIdebDreSelectHTML = buildIdebDreSelectHTML;
+window.munBelongsToIdebDre = munBelongsToIdebDre;
 
 // ── Hiperlinks de fonte/conceito (caderno conceitual e notas técnicas) ──
 const LINK_FONTE = 'color:inherit;text-decoration:underline dotted;text-underline-offset:2px';
@@ -769,6 +772,52 @@ function updateActiveFilters() {
       if (type === 'mun') { S.munSel = null; const mi = document.getElementById('mun-search-input'); if (mi) mi.value = ''; }
       refreshActiveTab();
     });
+  });
+}
+
+/** Lista de DREs para filtro local do IDEB (não altera KPIs). */
+function getIdebDreList() {
+  return S.creLookup?.cre_list || S.creLookup?.dre_list || [];
+}
+
+/** Município pertence à DRE do filtro local? */
+function munBelongsToIdebDre(codMun, dreCod) {
+  if (!dreCod) return true;
+  const info = S.creLookup?.mun_to_cre?.[codMun] || S.creLookup?.municipios?.[codMun];
+  if (!info) return false;
+  return (info.cod_cre || info.dre || info.cre || info.cod_dre) === dreCod;
+}
+
+/** HTML do select de DRE (filtro local — escolas / territorial). */
+function buildIdebDreSelectHTML(selectId) {
+  const list = getIdebDreList();
+  if (!list.length) return '';
+  const cur = S.idebDreFilter || '';
+  return `
+    <label style="font-size:11px;color:#555;display:flex;align-items:center;gap:6px;white-space:nowrap">
+      Diretoria Regional
+      <select id="${selectId}" style="font-size:11px;padding:4px 8px;border-radius:5px;border:1px solid #ccc;background:#fff;min-width:160px">
+        <option value="">Todas</option>
+        ${list.map(c => {
+          const cod = c.cod_cre || c.cod_dre;
+          const nome = c.nome_cre || c.nome_dre || cod;
+          return `<option value="${cod}" ${cod === cur ? 'selected' : ''}>${nome}</option>`;
+        }).join('')}
+      </select>
+    </label>`;
+}
+
+/** Bind selects de DRE local — só filtra lista, sem recalcular IDEB. */
+function bindIdebDreLocalFilters() {
+  const apply = (val) => {
+    const next = val || null;
+    if ((S.idebDreFilter || null) === next) return;
+    S.idebDreFilter = next;
+    if (typeof renderIdeb === 'function') renderIdeb();
+  };
+  ['ideb-se-esc-dre', 'ideb-terr-dre'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.onchange = () => apply(el.value);
   });
 }
 
@@ -4854,15 +4903,12 @@ function renderIdeb() {
       <div class="map-container">
         <div class="map-toolbar">
           <h3>Mapa — IDEB ${etapaAtiva} <span id="ideb-map-ano">${mapAno}</span></h3>
-          ${SE_HIDE_DRE ? '' : `
-          <div class="map-layer-toggle">
-            <button class="map-layer-btn active" id="ideb-btn-layer-mun">Municípios</button>
-            <button class="map-layer-btn" id="ideb-btn-layer-cre">${SE_MODE ? 'DREs' : 'CREs'}</button>
-          </div>`}
+          ${buildIdebDreSelectHTML('ideb-terr-dre')}
           <span style="font-size:11px;font-weight:600;color:#555;padding:3px 8px">${etapaLabelAtiva}</span>
         </div>
         <div style="font-size:9.5px;color:#888;padding:4px 0 2px;line-height:1.4;font-style:italic">
           Municípios sem escolas estaduais de ${etapaLabelAtiva} com IDEB no ano aparecem em cinza.
+          ${S.idebDreFilter ? ' Filtro DRE lista só municípios da diretoria (não recalcula IDEB).' : ''}
         </div>
         <div id="ideb-map-leaflet" style="height:370px;border-radius:8px"></div>
       </div>
@@ -5086,6 +5132,10 @@ function renderIdeb() {
     S.mapLayer = L.geoJSON(S.geo, {
       style: feature => {
         const cod = feature.properties.cod_mun?.substring(0, 7);
+        const inDre = munBelongsToIdebDre(cod, S.idebDreFilter);
+        if (S.idebDreFilter && !inDre) {
+          return { fillColor: '#f0f0f0', weight: 0.5, opacity: 0.4, color: '#fff', fillOpacity: 0.25 };
+        }
         const md = munData[cod];
         const v = md?.[mapEtapa]?.ideb || 0;
         return { fillColor: v > 0 ? getIdebColor(v) : '#f0f0f0', weight: 0.8, opacity: 1, color: '#fff', fillOpacity: 0.85 };
@@ -5093,10 +5143,20 @@ function renderIdeb() {
       onEachFeature: (feature, layer) => {
         const cod = feature.properties.cod_mun?.substring(0, 7);
         const md = munData[cod];
+        const inDre = munBelongsToIdebDre(cod, S.idebDreFilter);
         layer.on({
-          mouseover: e => { e.target.setStyle({ weight: 2.5, color: '#FFB300', fillOpacity: 0.95 }); e.target.bringToFront(); info.update(feature.properties, md); },
+          mouseover: e => {
+            if (S.idebDreFilter && !inDre) return;
+            e.target.setStyle({ weight: 2.5, color: '#FFB300', fillOpacity: 0.95 });
+            e.target.bringToFront();
+            info.update(feature.properties, md);
+          },
           mouseout: e => { S.mapLayer.resetStyle(e.target); e.target.closeTooltip(); info.update(); },
-          click: () => { S.munSel = S.munSel === cod ? null : cod; refreshActiveTab(); }
+          click: () => {
+            if (S.idebDreFilter && !inDre) return;
+            S.munSel = S.munSel === cod ? null : cod;
+            refreshActiveTab();
+          }
         });
       }
     }).addTo(S.map);
@@ -5112,7 +5172,19 @@ function renderIdeb() {
     };
     legend.addTo(S.map);
     S.mapLegend = legend;
-    if (S.mapLayer) S.map.fitBounds(S.mapLayer.getBounds(), { padding: [20, 20] });
+    if (S.mapLayer) {
+      if (S.idebDreFilter) {
+        const bounds = L.latLngBounds([]);
+        S.mapLayer.eachLayer(layer => {
+          const cod = layer.feature?.properties?.cod_mun?.substring(0, 7);
+          if (munBelongsToIdebDre(cod, S.idebDreFilter)) bounds.extend(layer.getBounds());
+        });
+        if (bounds.isValid()) S.map.fitBounds(bounds, { padding: [20, 20] });
+        else S.map.fitBounds(S.mapLayer.getBounds(), { padding: [20, 20] });
+      } else {
+        S.map.fitBounds(S.mapLayer.getBounds(), { padding: [20, 20] });
+      }
+    }
   };
 
   // ── CRE layer for IDEB map ──
@@ -5176,7 +5248,10 @@ function renderIdeb() {
     const et = S.idebEtapa || 'EM';
 
     let entries = Object.entries(munData).filter(([, md]) => md?.[et]?.ideb != null);
-    if (S.creSel && S.creLookup?.mun_to_cre) {
+    if (S.idebDreFilter) {
+      entries = entries.filter(([cod]) => munBelongsToIdebDre(cod, S.idebDreFilter));
+    }
+    if (!SE_HIDE_DRE && S.creSel && S.creLookup?.mun_to_cre) {
       entries = entries.filter(([cod]) => S.creLookup.mun_to_cre[cod]?.cod_cre === S.creSel);
     }
     if (S.munSel) {
@@ -5304,6 +5379,7 @@ function renderIdeb() {
     IdebSE.bindEvoControls();
     IdebSE.bindAll(ideb);
   }
+  bindIdebDreLocalFilters();
 
   updateActiveFilters();
 }
@@ -15599,25 +15675,17 @@ async function init() {
       S.redeSel = 'estadual';
       S.idebEtapa = 'EM';
       S.creSel = null;
-      // MVP Sergipe: IDEB + geo municípios (sem DRE)
-      const fetches = [
+      // MVP Sergipe: IDEB + geo municípios + lookup DRE (filtro local em escolas/territorial)
+      const [respIdeb, respGeo, respDre] = await Promise.all([
         fetch('dados/4_7_ideb.json'),
         fetch(SE.geoFile),
-      ];
-      if (!SE_HIDE_DRE) {
-        fetches.push(fetch(SE.dreLookupFile), fetch('dados/se_dres.geojson'));
-      }
-      const [respIdeb, respGeo, respDre, respCreGeo] = await Promise.all(fetches);
+        fetch(SE.dreLookupFile),
+      ]);
       if (!respIdeb.ok) throw new Error(`IDEB HTTP ${respIdeb.status}`);
       S.ideb = await respIdeb.json();
       if (respGeo.ok) S.geo = await respGeo.json();
-      if (!SE_HIDE_DRE) {
-        if (respDre?.ok) S.creLookup = await respDre.json();
-        if (respCreGeo?.ok) S.creGeo = await respCreGeo.json();
-      } else {
-        S.creLookup = null;
-        S.creGeo = null;
-      }
+      if (respDre.ok) S.creLookup = await respDre.json();
+      S.creGeo = null; // sem mapa agregado por DRE
 
       // Stub S.data a partir do IDEB (anos + lookup) para filtros globais
       S.data = {
